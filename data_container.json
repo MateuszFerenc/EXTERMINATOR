@@ -1,0 +1,33 @@
+{
+    "bot-token": "OTQ2ODg3NjkzODIyOTg4MzI4.YhlP4g.wxG84GiBWCLXHjWJrP5qeSztpog",
+    "verify_method": 0,
+    "verify_depth": 5,
+    "Users2Verify": 1,
+    "Users2VerifyData": [
+        {
+            "uname": "FerencDev",
+            "udate": "2022-02-27-23:45",
+            "ucode": [
+                "bird",
+                "cow",
+                "eagle",
+                "bird",
+                "hedgehog"
+            ]
+        }
+    ],
+    "UsersVerified": 0,
+    "UsersVerifiedData": [],
+    "Users2GHOST": 0,
+    "Users2GHOSTData": [],
+    "UsersGHOSTED": 0,
+    "UsersGHOSTEDData": [],
+    "Users2Warn": 0,
+    "Users2WarnData": [],
+    "UsersWarned": 0,
+    "UserswarnedData": [],
+    "Users2Kick": 0,
+    "Users2KickData": [],
+    "UsersKicked": 0,
+    "UsersKickedData": []
+}
