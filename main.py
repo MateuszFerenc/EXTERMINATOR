@@ -44,7 +44,8 @@ def miniEXTERMINATOR(client):
     print("miniEXTERMINATOR thread created!")
 
     while True:
-        a = 5
+        if client.inuse:
+            a = 0   # print("In use") that works
 
 
 class EXTERMINATOR(discord.Client):
@@ -56,6 +57,7 @@ class EXTERMINATOR(discord.Client):
         self.ready = False
         self.name = app_name
         self.command_prefix = cmd_prefix
+        self.inuse = False
 
     async def on_ready(self):
         print('Logged and ready as {0.user}'.format(self))
@@ -63,20 +65,25 @@ class EXTERMINATOR(discord.Client):
         for server in self.guilds:
             print("%s - %s" % (server.id, server.name))
         if not self.ready:
-            Thread(target=miniEXTERMINATOR, args=(self,), daemon = True).start()
+            Thread(target=miniEXTERMINATOR, args=(self,), daemon=True).start()
         self.ready = True
 
     async def on_message(self, message):
+        self.inuse = True
         if self.ready:
             await handle_message(self, message)
+            self.inuse = False
 
     async def on_message_edit(self, before, after):
+        self.inuse = True
         if self.ready:
             await handle_message(self, after)
+            self.inuse = False
 
     async def on_member_join(self, member):
         if not self.ready:
             return
+        self.inuse = True
         print('{0} joined!'.format(member.name))
         channel = await member.create_dm()
         embed = discord.Embed(
@@ -87,6 +94,7 @@ class EXTERMINATOR(discord.Client):
         )
         await channel.send(embed=embed)
         await user_verify_pl(self, member, channel)
+        self.inuse = False
 
 
 async def handle_message(self, message):
