@@ -61,9 +61,14 @@ atexit.register(exit_handler)
 def miniexterminator(client):
     print("miniexterminator thread created!")
 
+    do_sth = False
     while True:
         if client.inuse:
-            a = 0  # print("In use") that works
+            do_sth = False
+        if not client.inuse:
+            if not do_sth:
+                # print("Bot in use")
+                a = 1
 
 
 class EXTERMINATOR(discord.Client):
@@ -82,33 +87,54 @@ class EXTERMINATOR(discord.Client):
         print('Connected to:')
         for server in self.guilds:
             if server.name not in data_c:
-                data_c.append({server.name: []})
-                data_c[server.name][0].update(data_container_schema)
+                data_c[server.name] = [data_container_schema]
             if server.name not in conf_c:
-                conf_c.append({server.name: []})
-                conf_c[server.name][0].update(config_container_schema)
+                conf_c[server.name] = [config_container_schema]
             print("%s - %s" % (server.id, server.name))
         if not self.ready:
             Thread(target=miniexterminator, args=(self,), daemon=True).start()
         self.ready = True
 
-    async def on_message(self, message):
+    async def on_guild_join(self, guild):
+        if not self.ready:
+            return
         self.inuse = True
+        print("{} has connected to {}".format(self.user, guild.name))
+        data_c[guild.name] = [data_container_schema]
+        conf_c[guild.name] = [config_container_schema]
+        print("JSON scheme added.")
+        self.inuse = False
+
+    async def on_guild_remove(self, guild):
+        if not self.ready:
+            return
+        self.inuse = True
+        print("{} has left the {}".format(self.user, guild.name))
+        del data_c[guild.name]
+        del conf_c[guild.name]
+        print("JSON scheme deleted.")
+        self.inuse = False
+
+    async def on_message(self, message):
         if self.ready:
-            await handle_message(self, message)
-            self.inuse = False
+            return
+        self.inuse = True
+        await handle_message(self, message)
+        self.inuse = False
 
     async def on_message_edit(self, before, after):
         if not self.ready:
             return
         self.inuse = True
         time_diff = after.edited_at - before.created_at
-        if time_diff.total_seconds() < 180:
+        if time_diff.total_seconds() < 180:         # 3 mins
             await handle_message(self, after)
         self.inuse = False
 
     async def on_member_join(self, member):
         if not self.ready:
+            return
+        if member.name == ex.user:
             return
         self.inuse = True
         print('{} joined!'.format(member.name))
@@ -126,6 +152,8 @@ class EXTERMINATOR(discord.Client):
     async def on_member_remove(self, member):
         if not self.ready:
             return
+        if member.name == ex.user:
+            return
         self.inuse = True
         print('{} has left the {} server'.format(member.name, member.guild.name))
         await user_left_handler(self, member)
@@ -142,6 +170,9 @@ class EXTERMINATOR(discord.Client):
 
 
 async def handle_message(self, message):
+    if not self.ready:
+        return
+    self.inuse = True
     if message.author != ex.user:
         if message.guild is not None:
             if message.content.startswith("E>"):
@@ -221,6 +252,7 @@ async def handle_message(self, message):
                 channel = await message.author.create_dm()
                 await channel.send(
                     ':construction: Under construction :construction: \nSoon available :construction_worker:')
+    self.inuse = False
 
 
 async def user_verify_pl(self, user, channel):
@@ -396,6 +428,5 @@ while True:
         ex = EXTERMINATOR(intents=intents)
         ex.run(token_c['bot-token'])
     except Exception as exception:
-        print(f"{type(exception)}\n{exception}")
-        print("Error! Retrying in 10 seconds..")
-        time.sleep(10)
+        print(f"Program stopped {type(exception)}\n{exception}")
+        exit()

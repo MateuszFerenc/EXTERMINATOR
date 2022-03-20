@@ -1,1 +1,8 @@
-{}
+{
+    "Waffen-SS": [
+        {
+            "verify_method": 0,
+            "verify_depth": 5
+        }
+    ]
+}
