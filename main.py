@@ -4,21 +4,20 @@ import discord
 import os
 import random
 import atexit
-import time
 import json
+import text_data as txt
 
 app_name = "EXTERMINATOR"
 cmd_prefix = 'E>'
 
-
 def print_help():
     page = f"**{app_name}** commands help (Command prefix **{cmd_prefix}**):\n"
     page += "\n• Non Admin commands •\n"
-    for command in nonadmin_commands.keys():
-        page += f"***{command}*** : {nonadmin_commands[command]}\n"
+    for command in txt.nonadmin_commands.keys():
+        page += f"***{command}*** : {txt.nonadmin_commands[command]}\n"
     page += "\n• Admin commands •\n"
-    for command in admin_commands.keys():
-        page += f"***{command}*** : {admin_commands[command]}\n"
+    for command in txt.admin_commands.keys():
+        page += f"***{command}*** : {txt.admin_commands[command]}\n"
     return page
 
 
@@ -87,9 +86,9 @@ class EXTERMINATOR(discord.Client):
         print('Connected to:')
         for server in self.guilds:
             if server.name not in data_c:
-                data_c[server.name] = [data_container_schema]
+                data_c[server.name] = [txt.data_container_schema]
             if server.name not in conf_c:
-                conf_c[server.name] = [config_container_schema]
+                conf_c[server.name] = [txt.config_container_schema]
             print("%s - %s" % (server.id, server.name))
         if not self.ready:
             Thread(target=miniexterminator, args=(self,), daemon=True).start()
@@ -100,8 +99,8 @@ class EXTERMINATOR(discord.Client):
             return
         self.inuse = True
         print("{} has connected to {}".format(self.user, guild.name))
-        data_c[guild.name] = [data_container_schema]
-        conf_c[guild.name] = [config_container_schema]
+        data_c[guild.name] = [txt.data_container_schema]
+        conf_c[guild.name] = [txt.config_container_schema]
         print("JSON scheme added.")
         self.inuse = False
 
@@ -210,8 +209,8 @@ async def handle_message(self, message):
                         await message.channel.send('Hi Admin!')
                     if 'set_verify_method' in msg:
                         msg = list(msg.split())
-                        if msg[1] in verify_types_str:
-                            conf_c[message.guild.name]['verify_method'] = verify_types_str.index(msg[1])
+                        if msg[1] in txt.verify_types_str:
+                            conf_c[message.guild.name]['verify_method'] = txt.verify_types_str.index(msg[1])
                             await message.channel.send('Verification method set to {0}'.format(msg[1]))
                         else:
                             await message.channel.send(
@@ -219,7 +218,7 @@ async def handle_message(self, message):
                                     msg[1]))
                     if 'set_verify_depth' in msg:
                         msg = list(msg.split())
-                        if int(msg[1]) in list(range(1, verify_obj_count)):
+                        if int(msg[1]) in list(range(1, txt.verify_obj_count)):
                             conf_c[message.guild.name]['verify_depth'] = int(msg[1])
                             await message.channel.send('Verification depth set to {0}'.format(msg[1]))
                         else:
@@ -259,8 +258,8 @@ async def user_verify_pl(self, user, channel):
     verify_emojis = []
     verify_emojis_raw = []
     for emoji in range(int(conf_c[user.guild.name]['verify_depth'])):
-        emoji_raw = verify_types[conf_c[user.guild.name]['verify_method']][
-            random.randrange(0, len(verify_types[conf_c[user.guild.name]['verify_method']]))]
+        emoji_raw = txt.verify_types[conf_c[user.guild.name]['verify_method']][
+            random.randrange(0, len(txt.verify_types[conf_c[user.guild.name]['verify_method']]))]
         verify_emojis.append(":" + emoji_raw + ":")
         verify_emojis_raw.append(emoji_raw)
 
@@ -308,64 +307,6 @@ async def user_left_handler(self, member):
             i += 1
     print("user {} successfully removed from database".format(member.name))
 
-
-animals = ["cow", "dog", "cat", "mouse", "hamster", "rabbit", "fox", "bear", "koala", "tiger", "lion", "pig", "frog",
-           "monkey", "chicken", "penguin", "bird", "duck", "eagle", "owl", "bat", "wolf", "horse", "hedgehog"]
-
-vegetables = ["watermelon", "banana", "pear", "orange", "apple", "lemon", "grapes", "blueberries", "strawberry",
-              "melon", "cherries", "peach", "mango", "pineapple", "coconut", "kiwi", "tomato", "avocado", "carrot",
-              "garlic", "onion", "potato", "corn", "broccoli"]
-
-verify_obj_count = 24  # counting from 1
-
-verify_types = [animals, vegetables]
-verify_types_str = ["animals", "vegetables"]
-
-nonadmin_commands = {
-    "help": "Prints bot commands and its description",
-    "hello": "Greets user with \"Hello!\"",
-    "ping": "Do I hear Ping-Pong? Lets check the connection latency",
-    "whereami": "Prints guild/server name"
-}
-
-admin_commands = {
-    "DATA TYPES": " -> <integer> <bool><text><text_multi>",
-    "set_verify_method": " <text> : Set user verification method to <text>\nAvailable methods: {}".format(
-        ", ".join(verify_types_str)),
-    "set_verify_depth": " <integer> : Set user verification method to <integer> depth\n<integer> must vary between <1, {}>".format(
-        verify_obj_count),
-    "set_verified_role": " <text> : Set <text> to role of verified user",
-    "set_verify_new": " <bool> : <bool> 0 - new users won't be verified | 1 - new users will be verified",
-    "verify_user": " <text> : Verifies user <text>",
-    "verify_bulk": " <text_multi> : Verifies multiple users on given conditions in <text>\nexample: verify_bulk @everyone not @role0 and not @role1",
-    "set_ghosting": " <bool> : <bool> 0 - non verified users ghosting disabled | 1 - enabled\n<integer> represents days to ghost user",
-    "set_warning": " <bool> : <bool> 0 - non verified users warn before kick disabled | 1 - enabled\n<integer> represents days to warn user",
-    "set_kick": " <bool> : <bool> 0 - non verified users kick disabled | 1 - enabled\n<integer> represents days to kick user",
-}
-
-data_container_schema = {
-    "Users2Verify": 0,
-    "Users2VerifyData": [],
-    "UsersVerified": 0,
-    "UsersVerifiedData": [],
-    "Users2GHOST": 0,
-    "Users2GHOSTData": [],
-    "UsersGHOSTED": 0,
-    "UsersGHOSTEDData": [],
-    "Users2Warn": 0,
-    "Users2WarnData": [],
-    "UsersWarned": 0,
-    "UsersWarnedData": [],
-    "Users2Kick": 0,
-    "Users2KickData": [],
-    "UsersLeft": 0,
-    "UsersLeftData": []
-}
-
-config_container_schema = {
-    "verify_method": 0,
-    "verify_depth": 5
-}
 
 data_c = {}
 conf_c = {}
