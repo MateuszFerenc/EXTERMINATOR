@@ -6,4 +6,6 @@ In work. <br>
 Need to do some things.
 
 <h2 style="color:yellow">TODO's</h2>
-<p>1)</p>
+<p>1) Create language (PL, EN) change availability<br>
+2) Add captcha or something similar<br>
+3)</p>
