@@ -1,4 +1,6 @@
-# temp verifications objects
+# < temp verifications objects
+import os
+
 animals = ["cow", "dog", "cat", "mouse", "hamster", "rabbit", "fox", "bear", "koala", "tiger", "lion", "pig", "frog",
            "monkey", "chicken", "penguin", "bird", "duck", "eagle", "owl", "bat", "wolf", "horse", "hedgehog"]
 
@@ -10,6 +12,8 @@ verify_obj_count = 24  # counting from 1
 
 verify_types = [animals, vegetables]
 verify_types_str = ["animals", "vegetables"]
+
+# < Multilingual text section START
 
 # commands help (non admin)
 nonadmin_commands = {
@@ -35,7 +39,9 @@ admin_commands = {
     "set_kick": " <bool> : <bool> 0 - non verified users kick disabled | 1 - enabled\n<integer> represents days to kick user",
 }
 
-# JSON data schemas
+# < Multilingual text section END
+
+# < JSON data schemas section START (Only english version!)
 data_container_schema = {
     "Users2Verify": 0,
     "Users2VerifyData": [],
@@ -57,5 +63,54 @@ data_container_schema = {
 
 config_container_schema = {
     "verify_method": 0,
-    "verify_depth": 5
+    "verify_depth": 5,
+    "language": "english",
+    "verify_role": None,
+    "verify_new": False,
+    "do_ghost": False,
+    "do_warn": False,
+    "do_kick": False
 }
+# < JSON data schemas section END
+
+"""
+texten = "Big dog barked at the cat."
+textpl = "Duży pies naszczekał na kota."
+text1en = "Adam {} stayed at {} tonight."
+text1pl = "Adam {} został w {} tej nocy."
+
+example_text = {
+    'english': texten,
+    'polish': textpl
+}
+
+example_text_args = {
+    'english': text1en,
+    'polish': text1pl
+}
+
+
+class TextData:
+    def __init__(self, *args, **kwargs):
+        super(TextData, self).__init__(*args, **kwargs)
+
+        # < languages tuple, use non capitalized letters
+        self.available_languages = ["english", "polish"]
+        self.language = "english"
+
+    def change_language(self, lang):
+        if lang.lower() in self.available_languages:
+            self.language = lang.lower()
+        else:
+            print("{} is not supported language!".format(lang))
+
+    def get_text(self, text, *args):
+        # self.__dict__ = dict(text)
+        # return self.__dict__.get(self.language)
+        for lang, val in text:
+            print(lang + "  " + val)
+"""
+
+if __name__ == "__main__":
+    print("ERROR! This file cannot be used standalone!")
+    os.abort()

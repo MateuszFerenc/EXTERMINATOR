@@ -6,9 +6,11 @@ import random
 import atexit
 import json
 import text_data as txt
+import image_generator
 
 app_name = "EXTERMINATOR"
 cmd_prefix = 'E>'
+
 
 def print_help():
     page = f"**{app_name}** commands help (Command prefix **{cmd_prefix}**):\n"
@@ -32,6 +34,7 @@ async def send_embed_help(message, data):
     await message.channel.send(embed=embed)
 
 
+# To be deleted, but before save it as quite useful
 def create_json_struct(main_name='none', **child):
     data = {main_name: []}
     first = True
@@ -80,6 +83,8 @@ class EXTERMINATOR(discord.Client):
         self.name = app_name
         self.command_prefix = cmd_prefix
         self.inuse = False
+        self.language = "english"
+        self.msg_edit_interval = 180 # seconds
 
     async def on_ready(self):
         print('Logged and ready as {0.user}'.format(self))
@@ -126,7 +131,7 @@ class EXTERMINATOR(discord.Client):
             return
         self.inuse = True
         time_diff = after.edited_at - before.created_at
-        if time_diff.total_seconds() < 180:         # 3 mins
+        if time_diff.total_seconds() < self.msg_edit_interval:
             await handle_message(self, after)
         self.inuse = False
 
@@ -136,16 +141,16 @@ class EXTERMINATOR(discord.Client):
         if member.name == ex.user:
             return
         self.inuse = True
-        print('{} joined!'.format(member.name))
+        print('{} has joined {}!'.format(member.name, member.guild.name))
         channel = await member.create_dm()
         embed = discord.Embed(
-            title=':smiley: Witaj {} :wave:'.format(member.name),
-            description='Z przyjemnością gościmy Cię na {}.\n\nZanim jednak otrzymasz możliwość '
-                        'korzystania z naszego serwera, będziesz musiał się zweryfikować.'.format(member.guild.name),
+            title=':smiley: Hello! {} :wave:'.format(member.name),
+            description='We are glad to see you on {}.\n\nUntil you gain server access'
+                        ', you need to pass verification.'.format(member.guild.name),
             color=0xC00000
         )
         await channel.send(embed=embed)
-        await user_verify_pl(self, member, channel)
+        await user_verify(self, member, channel)
         self.inuse = False
 
     async def on_member_remove(self, member):
@@ -208,23 +213,23 @@ async def handle_message(self, message):
                     if message.content == 'hello':
                         await message.channel.send('Hi Admin!')
                     if 'set_verify_method' in msg:
-                        msg = list(msg.split())
+                        cmd, val = list(msg.split())
                         if msg[1] in txt.verify_types_str:
-                            conf_c[message.guild.name]['verify_method'] = txt.verify_types_str.index(msg[1])
-                            await message.channel.send('Verification method set to {0}'.format(msg[1]))
+                            conf_c[message.guild.name]['verify_method'] = txt.verify_types_str.index(val)
+                            await message.channel.send('Verification method set to {0}'.format(val))
                         else:
                             await message.channel.send(
                                 ':octagonal_sign:  ERROR!  :octagonal_sign: \nInvalid argument => {0} <='.format(
-                                    msg[1]))
+                                    val))
                     if 'set_verify_depth' in msg:
-                        msg = list(msg.split())
-                        if int(msg[1]) in list(range(1, txt.verify_obj_count)):
-                            conf_c[message.guild.name]['verify_depth'] = int(msg[1])
-                            await message.channel.send('Verification depth set to {0}'.format(msg[1]))
+                        cmd, val = list(msg.split())
+                        if int(val) in list(range(1, txt.verify_obj_count)):
+                            conf_c[message.guild.name]['verify_depth'] = int(val)
+                            await message.channel.send('Verification depth set to {0}'.format(val))
                         else:
                             await message.channel.send(
                                 ':octagonal_sign:  ERROR!  :octagonal_sign: \nInvalid value => {0} <='.format(
-                                    msg[1]))
+                                    val))
                     if 'set_verified_role' in msg:
                         await message.channel.send(
                             ':construction: Under construction :construction: \nSoon available :construction_worker:')
@@ -254,7 +259,7 @@ async def handle_message(self, message):
     self.inuse = False
 
 
-async def user_verify_pl(self, user, channel):
+async def user_verify(self, user, channel):
     verify_emojis = []
     verify_emojis_raw = []
     for emoji in range(int(conf_c[user.guild.name]['verify_depth'])):
@@ -264,7 +269,7 @@ async def user_verify_pl(self, user, channel):
         verify_emojis_raw.append(emoji_raw)
 
     embed = discord.Embed(
-        title="Weryfikacja",
+        title="Verification",
         description='Aby tego dokonać, musisz wypisać w tej samej kolejności nazwy tych emoji (po przecinku i po '
                     'angielsku!) \n{0}'.format(
             ' , '.join(verify_emojis)),
@@ -287,6 +292,7 @@ async def user_verify_pl(self, user, channel):
             "ucode": verify_emojis_raw
         }
         data_c[user.guild.name]['Users2VerifyData'].append(data)
+        print("user {} successfully added to database".format(user.name))
 
 
 async def user_left_handler(self, member):
@@ -354,10 +360,10 @@ if no_token:
 if 'bot-token' not in token_c:
     token_c['bot-token'] = input('No bot-token in data_container.json, enter it please\n>')
 
-
-# TTODO's
-# 1)
-# 2) Implement second thread functions (ie. remote bot control, live command execution, time handler)
+# TODO's
+# 1) Implement english and Polish language text selection, and add auto translation option from english
+# to chosen language
+# 2) Implement second thread functions (i.e. remote bot control, live command execution, time handler)
 # 3)
 # 4) Implement user verification - half done
 # 5) Be happy and positive :)
