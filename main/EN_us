@@ -1,0 +1,22 @@
+.. EN_us language file
+.. file format - parameter#text
+.. '#' ends parameter placeholder
+.. '..' starts single line command, not interpreted
+.. '{}' use for string format
+..
+.. non admin commands descriptions [nac_H]
+nac_H_help#Prints bot commands and its description
+nac_H_hello#Greets user with \"Hello!\"
+nac_H_ping#Did I hear Ping-Pong? Lets check the connection latency
+nac_H_whereami#Prints guild/server name
+.. admin only commands descriptions [ac_H]
+ac_H_DATATYPES# -> <integer> <bool><text><text_multi>
+ac_H_set_verify_method# <text> : Set user verification method to <text>\nAvailable methods: {}
+ac_H_set_verify_depth# <integer> : Set user verification complexity to <integer> level\n<integer> must vary between <1, {}>
+ac_H_set_verified_role#
+ac_H_set_verify_new#
+ac_H_verify_user#
+ac_H_verify_bulk#
+ac_H_set_ghosting#
+ac_H_set_warning#
+ac_H_set_kick#

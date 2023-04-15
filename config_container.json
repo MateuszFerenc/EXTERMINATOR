@@ -2,7 +2,25 @@
     "Waffen-SS": [
         {
             "verify_method": 0,
-            "verify_depth": 5
+            "verify_depth": 5,
+            "language": "english",
+            "verify_role": null,
+            "verify_new": false,
+            "do_ghost": false,
+            "do_warn": false,
+            "do_kick": false
+        }
+    ],
+    "XYZ": [
+        {
+            "verify_method": 0,
+            "verify_depth": 5,
+            "language": "english",
+            "verify_role": null,
+            "verify_new": false,
+            "do_ghost": false,
+            "do_warn": false,
+            "do_kick": false
         }
     ]
 }

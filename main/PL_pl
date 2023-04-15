@@ -1,0 +1,5 @@
+.. PL_pl plik językowy
+.. format pliku - parametr#tekst
+.. '#' znak końca parametru
+.. '..' rozpoczyna jednoliniowy komentarz, nie interpretowany
+.. '{}' używany do formatowania ciągu znaków

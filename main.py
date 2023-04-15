@@ -1,15 +1,20 @@
 from threading import Thread
 from datetime import datetime
 import discord
-import os
+from os import abort, path
 import random
 import atexit
 import json
 import text_data as txt
-import image_generator
+
+from lang_support import LangSupport
+from datalogger import DataLogger
 
 app_name = "EXTERMINATOR"
 cmd_prefix = 'E>'
+
+languages = LangSupport(path.basename(__file__).split(".")[0], ignore_file_error=True, ignore_key_error=True, ignore_dict_error=True)
+dl = DataLogger(path.basename(__file__).split(".")[0], 'logs', debug=True)  # "debug=True" remove in future
 
 
 def print_help():
@@ -34,19 +39,6 @@ async def send_embed_help(message, data):
     await message.channel.send(embed=embed)
 
 
-# To be deleted, but before save it as quite useful
-def create_json_struct(main_name='none', **child):
-    data = {main_name: []}
-    first = True
-    for arg in child.items():
-        if first:
-            data[main_name].append({arg[0]: arg[1]})
-            first = False
-        else:
-            data[main_name][0].update({arg[0]: arg[1]})
-    return data
-
-
 def exit_handler():
     with open("data_container.json", "w") as data_container_write:
         json.dump(data_c, data_container_write, indent=4)
@@ -54,6 +46,8 @@ def exit_handler():
         json.dump(token_c, data_token_write, indent=4)
     with open("config_container.json", "w") as config_container_write:
         json.dump(conf_c, config_container_write, indent=4)
+    for inst in DataLogger.instances:
+        inst.end()
     print("Clean exit")
 
 
@@ -64,13 +58,12 @@ def miniexterminator(client):
     print("miniexterminator thread created!")
 
     do_sth = False
+    msg = ""
     while True:
-        if client.inuse:
-            do_sth = False
-        if not client.inuse:
-            if not do_sth:
-                # print("Bot in use")
-                a = 1
+        msg = input("enter superuser message")
+        if not client.inuse and do_sth:
+            client.superuser_message_send("1096800402369949796", msg)
+            
 
 
 class EXTERMINATOR(discord.Client):
@@ -85,6 +78,12 @@ class EXTERMINATOR(discord.Client):
         self.inuse = False
         self.language = "english"
         self.msg_edit_interval = 180 # seconds
+        
+    async def superuser_message_send(self, channel, message):
+        #channel = discord.utils.get(self.client.get_all_channels(), id=channel)
+        channel = self.get_channel(channel)
+        print(message)
+        await channel.send(message)
 
     async def on_ready(self):
         print('Logged and ready as {0.user}'.format(self))
@@ -120,7 +119,7 @@ class EXTERMINATOR(discord.Client):
         self.inuse = False
 
     async def on_message(self, message):
-        if self.ready:
+        if not self.ready:
             return
         self.inuse = True
         await handle_message(self, message)
@@ -313,67 +312,59 @@ async def user_left_handler(self, member):
             i += 1
     print("user {} successfully removed from database".format(member.name))
 
+if __name__ == "__main__":
+    data_c = {}
+    conf_c = {}
+    token_c = {}
 
-data_c = {}
-conf_c = {}
-token_c = {}
-
-try:
-    with open("data_container.json", "r") as data_container:
-        try:
-            data_c = json.load(data_container)
-        except json.JSONDecodeError:
-            print("data_container.json is empty")
-        else:
-            print("Data from data_container.json, successfully read")
-except FileNotFoundError:
-    print("data_container.json file not found!")
-    os.abort()
-
-try:
-    with open("config_container.json", "r") as config_container:
-        try:
-            conf_c = json.load(config_container)
-        except json.JSONDecodeError:
-            print("config_container.json is empty")
-        else:
-            print("Data from config_container.json, successfully read")
-except FileNotFoundError:
-    print("config_container.json file not found!\nNew config_container file will be created soon.")
-
-no_token = True
-try:
-    with open("data_token.json", "r") as data_token:
-        try:
-            token_c = json.load(data_token)
-        except json.JSONDecodeError:
-            print("data_token.json is empty")
-        else:
-            no_token = False
-            print("Token from data_token.json, successfully read")
-except FileNotFoundError:
-    print("data_token.json, not found")
-
-if no_token:
-    token_c['bot-token'] = input('No bot-token in data_container.json, enter it please\n>')
-
-if 'bot-token' not in token_c:
-    token_c['bot-token'] = input('No bot-token in data_container.json, enter it please\n>')
-
-# TODO's
-# 1) Implement english and Polish language text selection, and add auto translation option from english
-# to chosen language
-# 2) Implement second thread functions (i.e. remote bot control, live command execution, time handler)
-# 3)
-# 4) Implement user verification - half done
-# 5) Be happy and positive :)
-
-while True:
     try:
-        intents = discord.Intents.default()
+        with open("data_container.json", "r") as data_container:
+            try:
+                data_c = json.load(data_container)
+            except json.JSONDecodeError:
+                print("data_container.json is corrupted")
+                abort()
+            else:
+                print("Data from data_container.json, successfully read")
+    except FileNotFoundError:
+        print("data_container.json file not found!\nNew data_container file will be created.")
+
+    try:
+        with open("config_container.json", "r") as config_container:
+            try:
+                conf_c = json.load(config_container)
+            except json.JSONDecodeError:
+                print("config_container.json is corrupted")
+                abort()
+            else:
+                print("Data from config_container.json, successfully read")
+    except FileNotFoundError:
+        print("config_container.json file not found!\nNew config_container file will be created.")
+
+    no_token = True
+    try:
+        with open("data_token.json", "r") as data_token:
+            try:
+                token_c = json.load(data_token)
+            except json.JSONDecodeError:
+                print("data_token.json is corrupted")
+            else:
+                no_token = False
+                print("Token from data_token.json, successfully read")
+    except FileNotFoundError:
+        print("data_token.json, not found")
+
+    if no_token:
+        token_c['bot-token'] = input('No bot-token in data_token.json, enter it please\n>')
+
+    if 'bot-token' not in token_c:
+        token_c['bot-token'] = input('No bot-token in data_container.json, enter it please\n>')
+
+    try:
+        intents = discord.Intents.all()
         intents.members = True
         ex = EXTERMINATOR(intents=intents)
         ex.run(token_c['bot-token'])
     except Exception as exception:
-        print(f"Program stopped {type(exception)}\n{exception}")
+        print(f"Program stopped due to {type(exception)}\n{exception}")
         exit()
