@@ -1,3 +1,6 @@
 /venv/
 /__pycache__/
 /data_token.json
+/logs/
+/data_container.json
+/config_container.json

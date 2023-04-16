@@ -1,22 +1,26 @@
 .. EN_us language file
 .. file format - parameter#text
 .. '#' ends parameter placeholder
-.. '..' starts single line command, not interpreted
+.. '..' starts single line comment, not interpreted
 .. '{}' use for string format
 ..
+header_help#**{}** commands help (Command prefix **{}**):
 .. non admin commands descriptions [nac_H]
+header_nac_H#• Non Admin commands •
 nac_H_help#Prints bot commands and its description
 nac_H_hello#Greets user with \"Hello!\"
 nac_H_ping#Did I hear Ping-Pong? Lets check the connection latency
 nac_H_whereami#Prints guild/server name
 .. admin only commands descriptions [ac_H]
-ac_H_DATATYPES# -> <integer> <bool><text><text_multi>
+header_ac_H#• Admin commands •
+ac_H_set_language# <text> : Change the language of the bot to one of the following {}
 ac_H_set_verify_method# <text> : Set user verification method to <text>\nAvailable methods: {}
 ac_H_set_verify_depth# <integer> : Set user verification complexity to <integer> level\n<integer> must vary between <1, {}>
-ac_H_set_verified_role#
-ac_H_set_verify_new#
-ac_H_verify_user#
-ac_H_verify_bulk#
-ac_H_set_ghosting#
-ac_H_set_warning#
-ac_H_set_kick#
+ac_H_set_verified_role# <text> : Set <text> to role of verified user
+ac_H_set_verify_new# <bool> : <bool> False - new users won't be verified | True - new users will be verified
+ac_H_verify_user# <text> : Verifies user <text>
+ac_H_verify_bulk# <text_multi> : Verifies yet unverified users
+ac_H_reverify# : Reverifies all server members - Command available one time per week 
+ac_H_set_ghosting# <bool> <integer> : <bool> False - non verified users being ghosted disabled | True - enabled  :  <integer> days to ghost user
+ac_H_set_warning# <bool> <integer> : <bool> False - non verified users being warn before kick disabled | True - enabled  :  <integer> days to warn user
+ac_H_set_kick# <bool> <integer> : <bool> False - non verified users kick disabled | True - enabled  :  <integer> days to kick user

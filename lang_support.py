@@ -4,10 +4,12 @@ from datalogger import DataLogger
 
 
 class LangSupport:
-    def __init__(self, directory=None, ignore_file_error=False, ignore_key_error=False, ignore_dict_error=False):
-        if directory is None:
-            exit(3)
-        self.dl = DataLogger(f"{path.basename(__file__).split('.')[0]}<<{directory}", 'logs', debug=True)  # "debug=True" remove in future
+    def __init__(self, directory: str = None, ignore_file_error: bool = False, ignore_key_error: bool = False, ignore_dict_error: str = False):
+        assert directory is not None
+        assert type(ignore_file_error) is bool
+        assert type(ignore_key_error) is bool
+        assert type(ignore_dict_error) is bool
+        self.dl = DataLogger(f"{path.basename(__file__).split('.')[0]}({directory})", 'logs')
         self.lang_list = []
         self.language = "EN_us"  # default language
         self.dictionary = {}  # language dictionary
@@ -26,7 +28,7 @@ class LangSupport:
         try:
             files = listdir(self.directory)
         except FileNotFoundError:
-            self.dl.log(f"Fatal error! Directory {self.directory} does not exist")
+            self.dl.log(f"Directory {self.directory} does not exist", log_type=3)
             exit(3)
         self.lang_list = []
         for Lang in files:
@@ -37,13 +39,14 @@ class LangSupport:
     def set_language(self, lang):
         if len(self.lang_list):
             if lang not in self.lang_list:
-                self.dl.log(f"Warning! {lang} language not found.")
+                self.dl.log(f"{lang} language not found.", log_type=1)
             self.language = lang
         else:
-            self.dl.log(f"Error! Languages not indexed or not present in directory!")
+            self.dl.log(f"Languages not indexed or not present in directory!", log_type=2)
             return None
         try:
-            with open(path.join(self.directory, self.language), "r", encoding="utf-8") as lang_data:
+            file = path.join(self.directory, self.language)
+            with open(file, "r", encoding="utf-8") as lang_data:
                 self.dictionary = {}
                 for line in lang_data:
                     if not line.startswith(".."):  # double-dotted lines are not interpreted comment lines
@@ -52,7 +55,7 @@ class LangSupport:
                         self.dictionary[split_line[0]] = split_line[1]  # enter values by keys into dictionary
                 lang_data.close()
         except FileNotFoundError:
-            self.dl.log(f"Fatal error! File not found!")
+            self.dl.log(f"File {file} not found!", log_type=2)
             if not self.ignore_file_error:
                 exit(3)
             self.dl.log(f"Exit disabled by ignore_file_error flag.")
@@ -63,12 +66,12 @@ class LangSupport:
             text = str(self.dictionary[dict_key])  # get text value based on key
         except KeyError:
             if len(self.dictionary):
-                self.dl.log(f"Error! {dict_key} key not found in {self.language} language file.")
+                self.dl.log(f"{dict_key} key not found in {self.language} language file.", log_type=2)
                 if self.ignore_key_error:
                     self.dl.log(f"Error disabled by ignore_key_error flag.")
                     return dict_key
             else:
-                self.dl.log(f"Fatal error! Language: {self.language} not loaded!")
+                self.dl.log(f"Language: {self.language} not loaded!", log_type=2)
                 if self.ignore_dict_error:
                     self.dl.log(f"Exit disabled by ignore_dict_error flag.")
                     return dict_key
@@ -76,7 +79,8 @@ class LangSupport:
         try:
             text = text.format(*args)   # try to format text with arguments, if any specified
         except IndexError:
-            pass
+            if text.find("{}"):
+                self.dl.log(f"Key: {dict_key} can be formatted, but no args were given.", log_type=1)
         return text
 
 

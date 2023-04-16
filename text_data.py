@@ -1,47 +1,8 @@
-# < temp verifications objects
-import os
 
-animals = ["cow", "dog", "cat", "mouse", "hamster", "rabbit", "fox", "bear", "koala", "tiger", "lion", "pig", "frog",
-           "monkey", "chicken", "penguin", "bird", "duck", "eagle", "owl", "bat", "wolf", "horse", "hedgehog"]
+app_name = "EXTERMINATOR"
+cmd_prefix = 'E>'
 
-vegetables = ["watermelon", "banana", "pear", "orange", "apple", "lemon", "grapes", "blueberries", "strawberry",
-              "melon", "cherries", "peach", "mango", "pineapple", "coconut", "kiwi", "tomato", "avocado", "carrot",
-              "garlic", "onion", "potato", "corn", "broccoli"]
-
-verify_obj_count = 24  # counting from 1
-
-verify_types = [animals, vegetables]
-verify_types_str = ["animals", "vegetables"]
-
-# < Multilingual text section START
-
-# commands help (non admin)
-nonadmin_commands = {
-    "help": "Prints bot commands and its description",
-    "hello": "Greets user with \"Hello!\"",
-    "ping": "Do I hear Ping-Pong? Lets check the connection latency",
-    "whereami": "Prints guild/server name"
-}
-
-# commands help (admin)
-admin_commands = {
-    "DATA TYPES": " -> <integer> <bool><text><text_multi>",
-    "set_verify_method": " <text> : Set user verification method to <text>\nAvailable methods: {}".format(
-        ", ".join(verify_types_str)),
-    "set_verify_depth": " <integer> : Set user verification method to <integer> depth\n<integer> must vary between <1, {}>".format(
-        verify_obj_count),
-    "set_verified_role": " <text> : Set <text> to role of verified user",
-    "set_verify_new": " <bool> : <bool> 0 - new users won't be verified | 1 - new users will be verified",
-    "verify_user": " <text> : Verifies user <text>",
-    "verify_bulk": " <text_multi> : Verifies multiple users on given conditions in <text>\nexample: verify_bulk @everyone not @role0 and not @role1",
-    "set_ghosting": " <bool> : <bool> 0 - non verified users ghosting disabled | 1 - enabled\n<integer> represents days to ghost user",
-    "set_warning": " <bool> : <bool> 0 - non verified users warn before kick disabled | 1 - enabled\n<integer> represents days to warn user",
-    "set_kick": " <bool> : <bool> 0 - non verified users kick disabled | 1 - enabled\n<integer> represents days to kick user",
-}
-
-# < Multilingual text section END
-
-# < JSON data schemas section START (Only english version!)
+# < JSON data schemas section START
 data_container_schema = {
     "Users2Verify": 0,
     "Users2VerifyData": [],
@@ -73,44 +34,38 @@ config_container_schema = {
 }
 # < JSON data schemas section END
 
-"""
-texten = "Big dog barked at the cat."
-textpl = "Duży pies naszczekał na kota."
-text1en = "Adam {} stayed at {} tonight."
-text1pl = "Adam {} został w {} tej nocy."
-
-example_text = {
-    'english': texten,
-    'polish': textpl
-}
-
-example_text_args = {
-    'english': text1en,
-    'polish': text1pl
-}
-
-
-class TextData:
-    def __init__(self, *args, **kwargs):
-        super(TextData, self).__init__(*args, **kwargs)
-
-        # < languages tuple, use non capitalized letters
-        self.available_languages = ["english", "polish"]
-        self.language = "english"
-
-    def change_language(self, lang):
-        if lang.lower() in self.available_languages:
-            self.language = lang.lower()
-        else:
-            print("{} is not supported language!".format(lang))
-
-    def get_text(self, text, *args):
-        # self.__dict__ = dict(text)
-        # return self.__dict__.get(self.language)
-        for lang, val in text:
-            print(lang + "  " + val)
-"""
-
-if __name__ == "__main__":
-    print("ERROR! This file cannot be used standalone!")
-    os.abort()
+def prepare_help_page(langsupport_inst):
+    page = "{}\n".format(langsupport_inst.get_text('header_help', app_name, cmd_prefix))
+    page += "\n{}\n".format(langsupport_inst.get_text('header_nac_H'))
+    lkey = 'nac_H_help'
+    page += "***{}*** : {}\n".format(lkey.replace('nac_H_', ''), langsupport_inst.get_text(lkey))
+    lkey = 'nac_H_hello'
+    page += "***{}*** : {}\n".format(lkey.replace('nac_H_', ''), langsupport_inst.get_text(lkey))
+    lkey = 'nac_H_ping'
+    page += "***{}*** : {}\n".format(lkey.replace('nac_H_', ''), langsupport_inst.get_text(lkey))
+    lkey = 'nac_H_whereami'
+    page += "***{}*** : {}\n".format(lkey.replace('nac_H_', ''), langsupport_inst.get_text(lkey))
+    page += "\n{}\n".format(langsupport_inst.get_text('header_ac_H'))
+    lkey = 'ac_H_set_language'
+    page += "***{}*** : {}\n".format(lkey.replace('ac_H_', ''), langsupport_inst.get_text(lkey, langsupport_inst.lang_list))
+    lkey = 'ac_H_set_verify_method'
+    page += "***{}*** : {}\n".format(lkey.replace('ac_H_', ''), langsupport_inst.get_text(lkey))
+    lkey = 'ac_H_set_verify_depth'
+    page += "***{}*** : {}\n".format(lkey.replace('ac_H_', ''), langsupport_inst.get_text(lkey, ['null']))
+    lkey = 'ac_H_set_verified_role'
+    page += "***{}*** : {}\n".format(lkey.replace('ac_H_', ''), langsupport_inst.get_text(lkey))
+    lkey = 'ac_H_set_verify_new'
+    page += "***{}*** : {}\n".format(lkey.replace('ac_H_', ''), langsupport_inst.get_text(lkey))
+    lkey = 'ac_H_verify_user'
+    page += "***{}*** : {}\n".format(lkey.replace('ac_H_', ''), langsupport_inst.get_text(lkey))
+    lkey = 'ac_H_verify_bulk'
+    page += "***{}*** : {}\n".format(lkey.replace('ac_H_', ''), langsupport_inst.get_text(lkey))
+    lkey = 'ac_H_reverify'
+    page += "***{}*** : {}\n".format(lkey.replace('ac_H_', ''), langsupport_inst.get_text(lkey))
+    lkey = 'ac_H_set_ghosting'
+    page += "***{}*** : {}\n".format(lkey.replace('ac_H_', ''), langsupport_inst.get_text(lkey))
+    lkey = 'ac_H_set_warning'
+    page += "***{}*** : {}\n".format(lkey.replace('ac_H_', ''), langsupport_inst.get_text(lkey))
+    lkey = 'ac_H_set_kick'
+    page += "***{}*** : {}\n".format(lkey.replace('ac_H_', ''), langsupport_inst.get_text(lkey))
+    return page.replace(r'\n', '\n')

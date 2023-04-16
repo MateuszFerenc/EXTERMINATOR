@@ -10,22 +10,8 @@ import text_data as txt
 from lang_support import LangSupport
 from datalogger import DataLogger
 
-app_name = "EXTERMINATOR"
-cmd_prefix = 'E>'
-
 languages = LangSupport(path.basename(__file__).split(".")[0], ignore_file_error=True, ignore_key_error=True, ignore_dict_error=True)
-dl = DataLogger(path.basename(__file__).split(".")[0], 'logs', debug=True)  # "debug=True" remove in future
-
-
-def print_help():
-    page = f"**{app_name}** commands help (Command prefix **{cmd_prefix}**):\n"
-    page += "\n• Non Admin commands •\n"
-    for command in txt.nonadmin_commands.keys():
-        page += f"***{command}*** : {txt.nonadmin_commands[command]}\n"
-    page += "\n• Admin commands •\n"
-    for command in txt.admin_commands.keys():
-        page += f"***{command}*** : {txt.admin_commands[command]}\n"
-    return page
+dl = DataLogger(path.basename(__file__).split(".")[0], 'logs')
 
 
 async def send_embed_help(message, data):
@@ -46,9 +32,9 @@ def exit_handler():
         json.dump(token_c, data_token_write, indent=4)
     with open("config_container.json", "w") as config_container_write:
         json.dump(conf_c, config_container_write, indent=4)
+    dl.log("Clean exit")
     for inst in DataLogger.instances:
         inst.end()
-    print("Clean exit")
 
 
 atexit.register(exit_handler)
@@ -73,10 +59,10 @@ class EXTERMINATOR(discord.Client):
 
         # self.config = config
         self.ready = False
-        self.name = app_name
-        self.command_prefix = cmd_prefix
+        self.name = txt.app_name
+        self.command_prefix = txt.cmd_prefix
         self.inuse = False
-        self.language = "english"
+        self.language = languages.language
         self.msg_edit_interval = 180 # seconds
         
     async def superuser_message_send(self, channel, message):
@@ -86,36 +72,36 @@ class EXTERMINATOR(discord.Client):
         await channel.send(message)
 
     async def on_ready(self):
-        print('Logged and ready as {0.user}'.format(self))
-        print('Connected to:')
+        dl.log(f"Logged and ready as {self.user}")
+        dl.log("Connected to:")
         for server in self.guilds:
             if server.name not in data_c:
                 data_c[server.name] = [txt.data_container_schema]
             if server.name not in conf_c:
                 conf_c[server.name] = [txt.config_container_schema]
-            print("%s - %s" % (server.id, server.name))
-        if not self.ready:
-            Thread(target=miniexterminator, args=(self,), daemon=True).start()
+            dl.log(f"{server.id} - {server.name}")
+        #if not self.ready:
+        #    Thread(target=miniexterminator, args=(self,), daemon=True).start()
         self.ready = True
 
     async def on_guild_join(self, guild):
         if not self.ready:
             return
         self.inuse = True
-        print("{} has connected to {}".format(self.user, guild.name))
+        dl.log(f"{self.user} has connected to {guild.name}")
         data_c[guild.name] = [txt.data_container_schema]
         conf_c[guild.name] = [txt.config_container_schema]
-        print("JSON scheme added.")
+        dl.log("JSON scheme added.")
         self.inuse = False
 
     async def on_guild_remove(self, guild):
         if not self.ready:
             return
         self.inuse = True
-        print("{} has left the {}".format(self.user, guild.name))
+        dl.log(f"{self.user} has left the {guild.name}")
         del data_c[guild.name]
         del conf_c[guild.name]
-        print("JSON scheme deleted.")
+        dl.log("JSON scheme deleted.")
         self.inuse = False
 
     async def on_message(self, message):
@@ -140,7 +126,7 @@ class EXTERMINATOR(discord.Client):
         if member.name == ex.user:
             return
         self.inuse = True
-        print('{} has joined {}!'.format(member.name, member.guild.name))
+        dl.log(f"{member.name} has joined {member.guild.name}")
         channel = await member.create_dm()
         embed = discord.Embed(
             title=':smiley: Hello! {} :wave:'.format(member.name),
@@ -158,7 +144,7 @@ class EXTERMINATOR(discord.Client):
         if member.name == ex.user:
             return
         self.inuse = True
-        print('{} has left the {} server'.format(member.name, member.guild.name))
+        dl.log(f"{member.name} has left the {member.guild.name} server")
         await user_left_handler(self, member)
         self.inuse = False
 
@@ -180,7 +166,10 @@ async def handle_message(self, message):
         if message.guild is not None:
             if message.content.startswith("E>"):
                 msg = message.content.replace('E>', '')
-
+                if message.author.guild_permissions.administrator:
+                    print("Admin!")
+                if message.author == message.guild.owner:
+                    print("Owner!")
                 # Users commands
                 if msg == 'hello':
                     await message.channel.send('Hello!')
@@ -205,10 +194,10 @@ async def handle_message(self, message):
                     await message.channel.send('You are on {} server!'.format(message.guild.name))
 
                 if msg == 'help':
-                    await send_embed_help(message, print_help())
-
+                    await send_embed_help(message, txt.prepare_help_page(langsupport_inst=languages))
+                    
                 # Admin commands
-                if message.author.guild_permissions.administrator:
+                if message.author.guild_permissions.administrator or message.author.id == self.guild.owner.id:
                     if message.content == 'hello':
                         await message.channel.send('Hi Admin!')
                     if 'set_verify_method' in msg:
@@ -291,7 +280,7 @@ async def user_verify(self, user, channel):
             "ucode": verify_emojis_raw
         }
         data_c[user.guild.name]['Users2VerifyData'].append(data)
-        print("user {} successfully added to database".format(user.name))
+        dl.log(f"user {user.name} successfully added to database")
 
 
 async def user_left_handler(self, member):
@@ -310,7 +299,7 @@ async def user_left_handler(self, member):
                 data_c[member.guild.name]['UsersLeftData'].append(data)
                 break
             i += 1
-    print("user {} successfully removed from database".format(member.name))
+    dl.log(f"user {member.name} successfully removed from database")
 
 if __name__ == "__main__":
     data_c = {}
@@ -322,24 +311,24 @@ if __name__ == "__main__":
             try:
                 data_c = json.load(data_container)
             except json.JSONDecodeError:
-                print("data_container.json is corrupted")
+                dl.log("data_container.json is corrupted", log_type=3)
                 abort()
             else:
-                print("Data from data_container.json, successfully read")
+                dl.log("Data from data_container.json, successfully read")
     except FileNotFoundError:
-        print("data_container.json file not found!\nNew data_container file will be created.")
+        dl.log("data_container.json file not found! New data_container file will be created.", log_type=1)
 
     try:
         with open("config_container.json", "r") as config_container:
             try:
                 conf_c = json.load(config_container)
             except json.JSONDecodeError:
-                print("config_container.json is corrupted")
+                dl.log("config_container.json is corrupted", log_type=3)
                 abort()
             else:
-                print("Data from config_container.json, successfully read")
+                dl.log("Data from config_container.json, successfully read")
     except FileNotFoundError:
-        print("config_container.json file not found!\nNew config_container file will be created.")
+        dl.log("config_container.json file not found! New config_container file will be created.", log_type=1)
 
     no_token = True
     try:
@@ -347,12 +336,12 @@ if __name__ == "__main__":
             try:
                 token_c = json.load(data_token)
             except json.JSONDecodeError:
-                print("data_token.json is corrupted")
+                dl.log("data_token.json is corrupted", log_type=3)
             else:
                 no_token = False
-                print("Token from data_token.json, successfully read")
+                dl.log("Token from data_token.json, successfully read")
     except FileNotFoundError:
-        print("data_token.json, not found")
+        dl.log("data_token.json, not found", log_type=1)
 
     if no_token:
         token_c['bot-token'] = input('No bot-token in data_token.json, enter it please\n>')
@@ -366,5 +355,5 @@ if __name__ == "__main__":
         ex = EXTERMINATOR(intents=intents)
         ex.run(token_c['bot-token'])
     except Exception as exception:
-        print(f"Program stopped due to {type(exception)}\n{exception}")
+        dl.log(f"Program stopped due to {type(exception)} : {exception}", log_type=3)
         exit()
