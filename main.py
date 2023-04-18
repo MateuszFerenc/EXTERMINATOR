@@ -49,23 +49,29 @@ class MiniExterminator(threading.Thread):
         intents = discord.Intents.all()
         intents.members = True
         self.ex = EXTERMINATOR(intents=intents)
+        self.loop = asyncio.new_event_loop()
         
     def run(self):
         try:
-            self.ex.run(token_c['bot-token'], log_handler=None)
+            self.loop.run_until_complete(self.ex.start(token_c['bot-token']))
         except Exception as exception:
             dl.log(f"Program stopped due to {type(exception)} : {exception}", log_type=3)
-            exit()
     
     def recieve(self, command):
         if command == 'exit':
-            asyncio.run(self.ex.close())
-            #loop = asyncio.get_running_loop()
-            #asyncio.run_coroutine_threadsafe(self.ex.shutdown, self.ex.loop)
+            try:
+                asyncio.run_coroutine_threadsafe(asyncio.wait_for(self.ex.shutdown(), timeout=30), self.ex.loop)
+                dl.log("Bot inactive.")
+            except TimeoutError:
+                dl.log("Bot shutdown timeout! Force quitting.", log_type=2)
+            self.ex.loop.stop()
+            self.loop.stop()
+            self.join()
         if command.startswith("su_send"):
-            asyncio.run(self.ex.superuser_message_send(channel=int(command.split()[1]), message=command.split()[2]))
-            # 1096800402369949796
-
+            channel = int(command.split()[1])
+            message = command.replace("su_send", "").replace(str(channel), "").strip().replace(r'\n', '\n')
+            dl.log(f"su_send {channel} {message}")
+            asyncio.run_coroutine_threadsafe(self.ex.superuser_message_send(channel=channel, message=message), self.loop)
 
 
 class EXTERMINATOR(discord.Client):
@@ -87,7 +93,8 @@ class EXTERMINATOR(discord.Client):
         
     async def shutdown(self):
         print("shuttingdown")
-        await self.close()
+        await self.loop.stop()
+        await self.loop.close()
         print("Bot offline")
 
     async def on_ready(self):
@@ -293,11 +300,15 @@ if __name__ == "__main__":
     miniex.start()
     
     while 1:
-        c = input("\n>")
+        try:
+            c = input(">")
+        except EOFError:
+            c = "exit"
         miniex.recieve(command = c)
         if c == 'exit':
             break
         if c == 'h':
             print("no help yet..")
 
+    miniex.join()
     dl.log("MiniExterminator thread has been killed")

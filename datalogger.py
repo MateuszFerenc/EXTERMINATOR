@@ -36,10 +36,15 @@ class DataLogger:
         if new_log is not None:
             self.log_name = new_log
 
-    def log(self, text: str, log_type: int = 0, do_print: bool = False):
-        assert log_type in range(0, len(self.log_types) + 1)
+    def log(self, text: str, log_type: int = 0, do_print: bool = False, do_ignore_newline: bool = True, do_ignore_tab: bool = True):
+        assert type(log_type) is int
+        assert 0 <= log_type < len(self.log_types)
         assert type(do_print) is bool
+        assert type(do_ignore_newline) is bool
+        assert type(do_ignore_tab) is bool
         now = datetime.now()
+        text = text.replace('\n', r'\n') if do_ignore_newline else text
+        text = text.replace('\t', r'\t') if do_ignore_tab else text
         log = f"{now.day}/{now.month}/{now.year} {now.hour}:{now.minute:02n}:{now.second:02n} {self.log_types[log_type]}: {text}\n"
         if self.do_log and not do_print:
             try:
