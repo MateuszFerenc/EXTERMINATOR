@@ -24,3 +24,5 @@ ac_H_reverify# : Reverifies all server members - Command available one time per 
 ac_H_set_ghosting# <bool> <integer> : <bool> False - non verified users being ghosted disabled | True - enabled  :  <integer> days to ghost user
 ac_H_set_warning# <bool> <integer> : <bool> False - non verified users being warn before kick disabled | True - enabled  :  <integer> days to warn user
 ac_H_set_kick# <bool> <integer> : <bool> False - non verified users kick disabled | True - enabled  :  <integer> days to kick user
+.. bot text data
+bot_activity_prompt#extermination | {}help for commands

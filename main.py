@@ -1,4 +1,4 @@
-from threading import Thread
+import threading
 from datetime import datetime
 import discord
 from os import abort, path
@@ -6,6 +6,7 @@ import random
 import atexit
 import json
 import text_data as txt
+import asyncio 
 
 from lang_support import LangSupport
 from datalogger import DataLogger
@@ -40,28 +41,41 @@ def exit_handler():
 atexit.register(exit_handler)
 
 
-def miniexterminator(client):
-    print("miniexterminator thread created!")
+class MiniExterminator(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.command_recieved = threading.Event()
+        self.daemon = True
+        intents = discord.Intents.all()
+        intents.members = True
+        self.ex = EXTERMINATOR(intents=intents)
+        
+    def run(self):
+        try:
+            self.ex.run(token_c['bot-token'], log_handler=None)
+        except Exception as exception:
+            dl.log(f"Program stopped due to {type(exception)} : {exception}", log_type=3)
+            exit()
+    
+    def recieve(self, command):
+        if command == 'exit':
+            asyncio.run(self.ex.close())
+            #loop = asyncio.get_running_loop()
+            #asyncio.run_coroutine_threadsafe(self.ex.shutdown, self.ex.loop)
+        if command.startswith("su_send"):
+            asyncio.run(self.ex.superuser_message_send(channel=int(command.split()[1]), message=command.split()[2]))
+            # 1096800402369949796
 
-    do_sth = False
-    msg = ""
-    while True:
-        msg = input("enter superuser message")
-        if not client.inuse and do_sth:
-            client.superuser_message_send("1096800402369949796", msg)
-            
 
 
 class EXTERMINATOR(discord.Client):
     def __init__(self, *args, **kwargs):
 
-        super(EXTERMINATOR, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
-        # self.config = config
         self.ready = False
         self.name = txt.app_name
         self.command_prefix = txt.cmd_prefix
-        self.inuse = False
         self.language = languages.language
         self.msg_edit_interval = 180 # seconds
         
@@ -70,6 +84,11 @@ class EXTERMINATOR(discord.Client):
         channel = self.get_channel(channel)
         print(message)
         await channel.send(message)
+        
+    async def shutdown(self):
+        print("shuttingdown")
+        await self.close()
+        print("Bot offline")
 
     async def on_ready(self):
         dl.log(f"Logged and ready as {self.user}")
@@ -80,226 +99,147 @@ class EXTERMINATOR(discord.Client):
             if server.name not in conf_c:
                 conf_c[server.name] = [txt.config_container_schema]
             dl.log(f"{server.id} - {server.name}")
-        #if not self.ready:
-        #    Thread(target=miniexterminator, args=(self,), daemon=True).start()
+        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=f" {languages.get_text('bot_activity_prompt', txt.cmd_prefix)}"))
         self.ready = True
 
     async def on_guild_join(self, guild):
-        if not self.ready:
-            return
-        self.inuse = True
-        dl.log(f"{self.user} has connected to {guild.name}")
-        data_c[guild.name] = [txt.data_container_schema]
-        conf_c[guild.name] = [txt.config_container_schema]
-        dl.log("JSON scheme added.")
-        self.inuse = False
+        if self.ready:
+            dl.log(f"{self.user} has connected to {guild.name}")
+            data_c[guild.name] = [txt.data_container_schema]
+            conf_c[guild.name] = [txt.config_container_schema]
+            dl.log("JSON scheme added.")
 
     async def on_guild_remove(self, guild):
-        if not self.ready:
-            return
-        self.inuse = True
-        dl.log(f"{self.user} has left the {guild.name}")
-        del data_c[guild.name]
-        del conf_c[guild.name]
-        dl.log("JSON scheme deleted.")
-        self.inuse = False
+        if self.ready:
+            dl.log(f"{self.user} has left the {guild.name}")
+            del data_c[guild.name]
+            del conf_c[guild.name]
+            dl.log("JSON scheme deleted.")
 
     async def on_message(self, message):
-        if not self.ready:
-            return
-        self.inuse = True
-        await handle_message(self, message)
-        self.inuse = False
+        if self.ready:
+            await handle_message(self, message)
 
     async def on_message_edit(self, before, after):
-        if not self.ready:
-            return
-        self.inuse = True
-        time_diff = after.edited_at - before.created_at
-        if time_diff.total_seconds() < self.msg_edit_interval:
-            await handle_message(self, after)
-        self.inuse = False
+        if self.ready:
+            time_diff = after.edited_at - before.created_at
+            if time_diff.total_seconds() < self.msg_edit_interval:
+                await handle_message(self, after)
 
     async def on_member_join(self, member):
-        if not self.ready:
-            return
-        if member.name == ex.user:
-            return
-        self.inuse = True
-        dl.log(f"{member.name} has joined {member.guild.name}")
-        channel = await member.create_dm()
-        embed = discord.Embed(
-            title=':smiley: Hello! {} :wave:'.format(member.name),
-            description='We are glad to see you on {}.\n\nUntil you gain server access'
-                        ', you need to pass verification.'.format(member.guild.name),
-            color=0xC00000
-        )
-        await channel.send(embed=embed)
-        await user_verify(self, member, channel)
-        self.inuse = False
+        if self.ready:
+            if member.name != self.user:
+                dl.log(f"{member.name} has joined {member.guild.name}")
+                channel = await member.create_dm()
+                embed = discord.Embed(
+                    title=f":smiley: Hello! {member.name} :wave:",
+                    description="User verification is temporarily unavailable, for further"
+                                "information please contact the Server Administration.",
+                    color=0xC00000
+                )
+                await channel.send(embed=embed)
+            else:
+                dl.log(f"{member.name} was added to {member.guild.name}")
 
     async def on_member_remove(self, member):
-        if not self.ready:
-            return
-        if member.name == ex.user:
-            return
-        self.inuse = True
-        dl.log(f"{member.name} has left the {member.guild.name} server")
-        await user_left_handler(self, member)
-        self.inuse = False
+        if self.ready:
+            if member.name != self.user:
+                dl.log(f"{member.name} has left the {member.guild.name} server")
+            else:
+                dl.log(f"{member.name} was removed from the {member.guild.name} server")
 
     async def on_member_update(self, before, after):
         # before.name != after.name
         # before.role != after.role
         if not self.ready:
             return
-        self.inuse = True
-
-        self.inuse = False
 
 
 async def handle_message(self, message):
-    if not self.ready:
-        return
-    self.inuse = True
-    if message.author != ex.user:
-        if message.guild is not None:
-            if message.content.startswith("E>"):
-                msg = message.content.replace('E>', '')
-                if message.author.guild_permissions.administrator:
-                    print("Admin!")
-                if message.author == message.guild.owner:
-                    print("Owner!")
-                # Users commands
-                if msg == 'hello':
-                    await message.channel.send('Hello!')
+    if self.ready:
+        if message.author != self.user:
+            if message.guild is not None:
+                if message.content.startswith("E>"):
+                    msg = message.content.replace('E>', '')
+                    if message.author.guild_permissions.administrator:
+                        pass #print("Admin!")
+                    if message.author == message.guild.owner:
+                        pass #print("Owner!")
+                    # Users commands
+                    if msg == 'hello':
+                        await message.channel.send('Hello!')
 
-                if msg == 'ping':
-                    ping = round(ex.latency, 1)
-                    speed = ''
-                    if ping <= 10:
-                        speed = 'Super fast :rocket:'
-                    elif ping <= 30:
-                        speed = 'Quite fast :rabbit:'
-                    elif ping <= 100:
-                        speed = 'Sloow :turtle:'
-                    else:
-                        speed = 'Terrible :sob:'
-                    await message.channel.send('pong! \n{0} {1} ms'.format(speed, ping))
-
-                if msg == '':
-                    await message.channel.send('Yep that\'s me')
-
-                if msg == 'whereami':
-                    await message.channel.send('You are on {} server!'.format(message.guild.name))
-
-                if msg == 'help':
-                    await send_embed_help(message, txt.prepare_help_page(langsupport_inst=languages))
-                    
-                # Admin commands
-                if message.author.guild_permissions.administrator or message.author.id == self.guild.owner.id:
-                    if message.content == 'hello':
-                        await message.channel.send('Hi Admin!')
-                    if 'set_verify_method' in msg:
-                        cmd, val = list(msg.split())
-                        if msg[1] in txt.verify_types_str:
-                            conf_c[message.guild.name]['verify_method'] = txt.verify_types_str.index(val)
-                            await message.channel.send('Verification method set to {0}'.format(val))
+                    if msg == 'ping':
+                        ping = round(self.latency, 1)
+                        speed = ''
+                        if ping <= 10:
+                            speed = 'Super fast :rocket:'
+                        elif ping <= 30:
+                            speed = 'Quite fast :rabbit:'
+                        elif ping <= 100:
+                            speed = 'Sloow :turtle:'
                         else:
+                            speed = 'Terrible :sob:'
+                        await message.channel.send('pong! \n{0} {1} ms'.format(speed, ping))
+
+                    if msg == '':
+                        await message.channel.send('Yep that\'s me')
+
+                    if msg == 'whereami':
+                        await message.channel.send('You are on {} server!'.format(message.guild.name))
+
+                    if msg == 'help':
+                        await send_embed_help(message, txt.prepare_help_page(langsupport_inst=languages))
+
+                    # Admin commands
+                    if message.author.guild_permissions.administrator or message.author.id == self.guild.owner.id:
+                        if message.content == 'hello':
+                            await message.channel.send('Hi Admin!')
+                        if 'set_verify_method' in msg:
+                            cmd, val = list(msg.split())
+                            if msg[1] in txt.verify_types_str:
+                                conf_c[message.guild.name]['verify_method'] = txt.verify_types_str.index(val)
+                                await message.channel.send('Verification method set to {0}'.format(val))
+                            else:
+                                await message.channel.send(
+                                    ':octagonal_sign:  ERROR!  :octagonal_sign: \nInvalid argument => {0} <='.format(
+                                        val))
+                        if 'set_verify_depth' in msg:
+                            cmd, val = list(msg.split())
+                            if int(val) in list(range(1, txt.verify_obj_count)):
+                                conf_c[message.guild.name]['verify_depth'] = int(val)
+                                await message.channel.send('Verification depth set to {0}'.format(val))
+                            else:
+                                await message.channel.send(
+                                    ':octagonal_sign:  ERROR!  :octagonal_sign: \nInvalid value => {0} <='.format(
+                                        val))
+                        if 'set_verified_role' in msg:
                             await message.channel.send(
-                                ':octagonal_sign:  ERROR!  :octagonal_sign: \nInvalid argument => {0} <='.format(
-                                    val))
-                    if 'set_verify_depth' in msg:
-                        cmd, val = list(msg.split())
-                        if int(val) in list(range(1, txt.verify_obj_count)):
-                            conf_c[message.guild.name]['verify_depth'] = int(val)
-                            await message.channel.send('Verification depth set to {0}'.format(val))
-                        else:
+                                ':construction: Under construction :construction: \nSoon available :construction_worker:')
+                        if 'set_verify_new' in msg:
                             await message.channel.send(
-                                ':octagonal_sign:  ERROR!  :octagonal_sign: \nInvalid value => {0} <='.format(
-                                    val))
-                    if 'set_verified_role' in msg:
-                        await message.channel.send(
-                            ':construction: Under construction :construction: \nSoon available :construction_worker:')
-                    if 'set_verify_new' in msg:
-                        await message.channel.send(
-                            ':construction: Under construction :construction: \nSoon available :construction_worker:')
-                    if 'verify_user' in msg:
-                        await message.channel.send(
-                            ':construction: Under construction :construction: \nSoon available :construction_worker:')
-                    if 'verify_bulk' in msg:
-                        await message.channel.send(
-                            ':construction: Under construction :construction: \nSoon available :construction_worker:')
-                    if 'set_ghosting' in msg:
-                        await message.channel.send(
-                            ':construction: Under construction :construction: \nSoon available :construction_worker:')
-                    if 'set_warning' in msg:
-                        await message.channel.send(
-                            ':construction: Under construction :construction: \nSoon available :construction_worker:')
-                    if 'set_kick' in msg:
-                        await message.channel.send(
-                            ':construction: Under construction :construction: \nSoon available :construction_worker:')
-        else:
-            if message.content != "":
-                channel = await message.author.create_dm()
-                await channel.send(
-                    ':construction: Under construction :construction: \nSoon available :construction_worker:')
-    self.inuse = False
+                                ':construction: Under construction :construction: \nSoon available :construction_worker:')
+                        if 'verify_user' in msg:
+                            await message.channel.send(
+                                ':construction: Under construction :construction: \nSoon available :construction_worker:')
+                        if 'verify_bulk' in msg:
+                            await message.channel.send(
+                                ':construction: Under construction :construction: \nSoon available :construction_worker:')
+                        if 'set_ghosting' in msg:
+                            await message.channel.send(
+                                ':construction: Under construction :construction: \nSoon available :construction_worker:')
+                        if 'set_warning' in msg:
+                            await message.channel.send(
+                                ':construction: Under construction :construction: \nSoon available :construction_worker:')
+                        if 'set_kick' in msg:
+                            await message.channel.send(
+                                ':construction: Under construction :construction: \nSoon available :construction_worker:')
+            else:
+                if message.content != "":
+                    channel = await message.author.create_dm()
+                    await channel.send(
+                        ':construction: Under construction :construction: \nSoon available :construction_worker:')
 
-
-async def user_verify(self, user, channel):
-    verify_emojis = []
-    verify_emojis_raw = []
-    for emoji in range(int(conf_c[user.guild.name]['verify_depth'])):
-        emoji_raw = txt.verify_types[conf_c[user.guild.name]['verify_method']][
-            random.randrange(0, len(txt.verify_types[conf_c[user.guild.name]['verify_method']]))]
-        verify_emojis.append(":" + emoji_raw + ":")
-        verify_emojis_raw.append(emoji_raw)
-
-    embed = discord.Embed(
-        title="Verification",
-        description='Aby tego dokonać, musisz wypisać w tej samej kolejności nazwy tych emoji (po przecinku i po '
-                    'angielsku!) \n{0}'.format(
-            ' , '.join(verify_emojis)),
-        color=0xC00000
-    )
-    await channel.send(embed=embed)
-    data_c[user.guild.name]['Users2Verify'] = data_c[user.guild.name]['Users2Verify'] + 1
-    updated = False
-    for i in range(len(data_c[user.guild.name]['Users2VerifyData'])):
-        if data_c['Users2VerifyData'][i]['uname'] is None:
-            data_c['Users2VerifyData'][i]['uname'] = user.name
-            data_c['Users2VerifyData'][i]['ujdate'] = user.joined_at.strftime('%Y-%m-%d-%H:%M')
-            data_c['Users2VerifyData'][i]['ucode'] = verify_emojis_raw
-            updated = True
-
-    if not updated:
-        data = {
-            "uname": user.name,
-            "ujdate": user.joined_at.strftime('%Y-%m-%d-%H:%M'),
-            "ucode": verify_emojis_raw
-        }
-        data_c[user.guild.name]['Users2VerifyData'].append(data)
-        dl.log(f"user {user.name} successfully added to database")
-
-
-async def user_left_handler(self, member):
-    for data_search in data_c[member.guild.name]:
-        if 'UsersLeftData' in data_search:
-            continue
-        i = 0
-        for data_user in data_search:
-            if data_c[member.guild.name][data_search][i]['uname'] == member.name:
-                data_c[member.guild.name][data_search][i]['uname'] = None
-                data = {
-                    "uname": member.name,
-                    "ujdate": data_c[member.guild.name][data_search][i]['ujdate'],
-                    "uldate": datetime.today().strftime('%Y-%m-%d-%H:%M')
-                }
-                data_c[member.guild.name]['UsersLeftData'].append(data)
-                break
-            i += 1
-    dl.log(f"user {member.name} successfully removed from database")
 
 if __name__ == "__main__":
     data_c = {}
@@ -349,11 +289,15 @@ if __name__ == "__main__":
     if 'bot-token' not in token_c:
         token_c['bot-token'] = input('No bot-token in data_container.json, enter it please\n>')
 
-    try:
-        intents = discord.Intents.all()
-        intents.members = True
-        ex = EXTERMINATOR(intents=intents)
-        ex.run(token_c['bot-token'])
-    except Exception as exception:
-        dl.log(f"Program stopped due to {type(exception)} : {exception}", log_type=3)
-        exit()
+    miniex = MiniExterminator()
+    miniex.start()
+    
+    while 1:
+        c = input("\n>")
+        miniex.recieve(command = c)
+        if c == 'exit':
+            break
+        if c == 'h':
+            print("no help yet..")
+
+    dl.log("MiniExterminator thread has been killed")
