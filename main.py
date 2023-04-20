@@ -19,6 +19,7 @@ languages = LangSupport(path.basename(__file__).split(".")[0], ignore_file_error
 dl = DataLogger(path.basename(__file__).split(".")[0], 'logs')
 
 langs_dict = {}
+exit_tasks = {}
 
 def exit_handler():
     with open("data_container.json", "w") as data_container_write:
@@ -44,18 +45,22 @@ class MiniExterminator(threading.Thread):
         intents.members = True
         self.ex = EXTERMINATOR(intents=intents)
         self.loop = asyncio.new_event_loop()
+        self.closed = False
         
     def run(self):
         try:
             self.loop.run_until_complete(self.ex.start(token_c['bot-token']))
         except Exception as exception:
             dl.log(f"Program stopped due to {type(exception)} : {exception}", log_type=3)
+        self.closed = True
     
     def recieve(self, command):
         dl.log(f"SuperUser command: {command}")
         if command == 'exit':
             try:
                 asyncio.run_coroutine_threadsafe(asyncio.wait_for(self.ex.shutdown(), timeout=30), self.ex.loop)
+                while not self.closed:
+                    pass
                 dl.log("Bot inactive.")
             except TimeoutError:
                 dl.log("Bot shutdown timeout! Force quitting.", log_type=2)
@@ -65,8 +70,7 @@ class MiniExterminator(threading.Thread):
         elif command.startswith("su_send"):
             try:
                 channel = int(command.split()[1])
-                message = command.strip(f"su_send {str(channel)}").replace(r'\n', '\n').replace(r'\t', '\t')
-                #message = command.replace("su_send", "").replace(str(channel), "").strip().replace(r'\n', '\n')
+                message = command.replace(f"su_send {str(channel)} ", "").replace(r'\n', '\n').replace(r'\t', '\t')
                 if len(message):
                     asyncio.run_coroutine_threadsafe(self.ex.superuser_message_send(channel=channel, message=message), self.loop)
                 else:
@@ -91,29 +95,28 @@ class MiniExterminator(threading.Thread):
                 print("Should be: math <channel-id>")
                 dl.log("Should be: math <channel-id>", log_type=2)
         elif command.startswith("dump_"):
-            command = command.strip(f"dump_")
+            command = command.replace(f"dump_", "")
             dtype = command.split()[0]
-            command = command.strip(f"{dtype} ").split()
+            command = command.replace(f"{dtype}", "").strip().split()
             wrong = False
             data = None
             if dtype == "config":
                 data = conf_c
             elif dtype == "data":
                 data = data_c
-            print(f"len: {len(command)}")
             if len(command) == 0:
                 dl.log(str(data))
                 print(str(data))
             elif len(command) == 1:
                 try:
-                    dump = str(data[command])
+                    dump = str(data[command[0]])
                     dl.log(dump)
                     print(dump)
                 except IndexError:
                     wrong = True
             elif len(command) == 2:
                 try:
-                    dump = str(data[command[0]][command[1]])
+                    dump = str(data[command[0]][0][command[1]])
                     dl.log(dump)
                     print(dump)
                 except IndexError:
@@ -124,7 +127,7 @@ class MiniExterminator(threading.Thread):
                 print(f"Should be: dump_<data | config> [<server-name>] [<parameter>]")
                 dl.log(f"Should be: dump_<data | config> [<server-name>] [<parameter>]", log_type=2)
         elif command.startswith("exec"):   # only for test purposes
-            comand = command.strip("exec ")
+            comand = command.replace("exec ", "")
             exec(str(comand))
         else:
             print(f"Command: {command} is unknown")
@@ -169,7 +172,7 @@ class EXTERMINATOR(discord.Client):
             lang = conf_c[server.name][0]['language']
             langs_dict[server.name] = txt.update_server_dict(languages, lang)
             dl.log(f"{server.id} - {server.name}")
-        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=f" {languages.get_text('bot_activity_prompt', txt.cmd_prefix)}"))
+        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=f"extermination | {txt.cmd_prefix}help for commands"))
         self.periodic_task.start()
         self.ready = True
 
@@ -234,69 +237,71 @@ async def handle_message(self, message):
     if self.ready:
         if message.author != self.user:
             if message.guild is not None:
-                if message.content.startswith("E>"):
-                    msg = message.content.replace('E>', '')
-                    # User independent commands
-                    if msg == 'ping':
-                        ping = round(self.latency, 1)
-                        speed = ''
-                        if ping <= 10:
-                            speed = languages.get_text('ping_sfast')
-                        elif ping <= 30:
-                            speed = languages.get_text('ping_fast')
-                        elif ping <= 100:
-                            speed = languages.get_text('ping_slow')
+                if message.content.startswith(txt.cmd_prefix):
+                    msg = message.content.replace(f"{txt.cmd_prefix}", "")
+                    cmd = msg.split()[0].strip()
+                    msg = msg.replace(f"{cmd}", "")
+
+                    is_admin = message.author.guild_permissions.administrator
+                    is_owner = message.author == message.guild.owner
+
+                    # check if command exist and user priviliges
+                    if cmd in txt.admin_cmd_list:
+                        # check if message author is a admin or owner
+                        if is_admin or is_owner:
+                            # Admin commands
+                            await handle_ac(cmd, msg, message)
                         else:
-                            speed = languages.get_text('ping_tslow')
-                        await message.channel.send(f"pong! \n{speed} {ping} ms")
-                    if msg == '':
-                        await message.channel.send(languages.get_text('its_me'))
-                    if msg == 'whereami':
-                        await message.channel.send(languages.get_text('whereme', message.guild.name))
-                    if msg == 'help':
-                        await send_embed_help(message, txt.prepare_help_page(langsupport_inst=languages))
-                    # check if message author is a admin or owner
-                    if message.author.guild_permissions.administrator or message.author == message.guild.owner:
-                        # Admin commands
-                        if msg == 'hello':
-                            await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'greet_admin'))
-                        if msg.startswith('set_language'):
-                            lang = msg.replace("set_language", "").strip()
-                            if lang not in languages.get_languages():
-                                pass
+                            # if not priviliged, check if command exists also as non admin 
+                            if cmd in txt.nonadmin_cmd_list:
+                                await handle_nac(cmd, msg, message)
                             else:
-                                dict_ = txt.update_server_dict(languages, lang)
-                                langs_dict[message.guild.name] = dict_
-                                conf_c[message.guild.name][0]['language'] = lang
-                        if 'set_verify_method' in msg:
-                            await message.channel.send(languages.get_text('under_construction'))
-                        if 'set_verify_depth' in msg:
-                            await message.channel.send(languages.get_text('under_construction'))
-                        if 'set_verified_role' in msg:
-                            await message.channel.send(languages.get_text('under_construction'))
-                        if 'set_verify_new' in msg:
-                            await message.channel.send(languages.get_text('under_construction'))
-                        if 'verify_user' in msg:
-                            await message.channel.send(languages.get_text('under_construction'))
-                        if 'verify_bulk' in msg:
-                            await message.channel.send(languages.get_text('under_construction'))
-                        if 'reverify' in msg:
-                            await message.channel.send(languages.get_text('under_construction'))
-                        if 'set_ghosting' in msg:
-                            await message.channel.send(languages.get_text('under_construction'))
-                        if 'set_warning' in msg:
-                            await message.channel.send(languages.get_text('under_construction'))
-                        if 'set_kick' in msg:
-                            await message.channel.send(languages.get_text('under_construction'))
+                                await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'notprivileged_command', cmd))
+                    elif cmd in txt.nonadmin_cmd_list:
+                        # Non Admin commands
+                        await handle_nac(cmd, msg, message)
                     else:
-                        # No permissions commands
-                        if msg == 'hello':
-                            await message.channel.send(languages.get_text('greet_user', message.author))
+                        await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'unknown_command', cmd))
             else:
                 if message.content != "":
                     channel = await message.author.create_dm()
-                    await channel.send(languages.get_text('under_construction'))
+                    await channel.send(languages.ext_text(langs_dict[message.guild.name], 'under_construction'))
 
+
+async def handle_nac(command: str, msg: str, message):
+    if command == 'ping':
+        ping = round(miniex.ex.latency, 1)
+        speed = ''
+        if ping <= 10:
+            speed = languages.ext_text(langs_dict[message.guild.name], 'ping_sfast')
+        elif ping <= 30:
+            speed = languages.ext_text(langs_dict[message.guild.name], 'ping_fast')
+        elif ping <= 100:
+            speed = languages.ext_text(langs_dict[message.guild.name], 'ping_slow')
+        else:
+            speed = languages.ext_text(langs_dict[message.guild.name], 'ping_tslow')
+        await message.channel.send(f"pong! \n{speed} {ping} ms")
+    elif command == 'whereami':
+        await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'whereme', message.guild.name))
+    elif command == 'help':
+        await send_embed_help(message, txt.prepare_help_page(languages, langs_dict[message.guild.name]))
+    elif command == 'hello':
+        await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'greet_user', message.author.split('#')[0]))
+    else:
+        await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'under_construction'))
+
+async def handle_ac(command: str, msg: str, message):
+    if command == 'hello':
+        await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'greet_admin'))
+    elif command == 'set_language':
+        if msg not in languages.get_languages():
+            await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'wrong_lang', msg))
+        else:
+            dict_ = txt.update_server_dict(languages, msg)
+            langs_dict[message.guild.name] = dict_
+            conf_c[message.guild.name][0]['language'] = msg
+    else:
+        await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'under_construction'))
 
 async def send_embed_help(message, data):
     if data is None:

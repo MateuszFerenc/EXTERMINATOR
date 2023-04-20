@@ -7,33 +7,37 @@
 header_help#**{}** commands help (Command prefix **{}**):
 .. non admin commands descriptions [nac_H]
 header_nac_H#• Non Admin commands •
-nac_H_help#Prints bot commands and its description
+nac_H_help#Prints bot commands and its descriptions
 nac_H_hello#Greets user with \"Hello!\"
 nac_H_ping#Did I hear Ping-Pong? Lets check the connection latency
-nac_H_whereami#Prints guild/server name
+nac_H_whereami#Prints server name
 .. admin only commands descriptions [ac_H]
 header_ac_H#• Admin commands •
-ac_H_set_language# <text> : Change the language of the bot to one of the following {}
-ac_H_set_verify_method# <text> : Set user verification method to <text>\nAvailable methods: {}
-ac_H_set_verify_depth# <integer> : Set user verification complexity to <integer> level\n<integer> must vary between <1, {}>
-ac_H_set_verified_role# <text> : Set <text> to role of verified user
-ac_H_set_verify_new# <bool> : <bool> False - new users won't be verified | True - new users will be verified
-ac_H_verify_user# <text> : Verifies user <text>
-ac_H_verify_bulk# <text_multi> : Verifies yet unverified users
-ac_H_reverify# : Reverifies all server members - Command available one time per week 
-ac_H_set_ghosting# <bool> <integer> : <bool> False - non verified users being ghosted disabled | True - enabled  :  <integer> days to ghost user
-ac_H_set_warning# <bool> <integer> : <bool> False - non verified users being warn before kick disabled | True - enabled  :  <integer> days to warn user
-ac_H_set_kick# <bool> <integer> : <bool> False - non verified users kick disabled | True - enabled  :  <integer> days to kick user
+ac_H_set_language#<text> : Change the language to **<text>** - **Command available 4 times a day**
+ac_H_get_languages#: Get available languages
+ac_H_set_verify_method#<text> : Set user verification method to **<text>**
+ac_H_get_verify_methods#: Get available user verification methods
+ac_H_get_bot_stats#: Print the bot's statistics and details
+ac_H_set_verified_role#<text> : Set **<text>** to role of verified user
+ac_H_set_verify_new#<bool> : **<bool>** verification of new users \n**False - disabled | True - enabled**
+ac_H_verify_user#<text> : Verifies user **<text>**
+ac_H_verify_bulk#<text_multi> : Verifies yet unverified users
+ac_H_reverify#Re-verify all server members - **Command available one time per week**
+ac_H_set_ghosting#<bool> <integer> : **<bool>** non verified users are being ghosted \n**False - inactive | True - active** : **<integer>** days to ghost user
+ac_H_set_warning#<bool> <integer> : **<bool>** non verified users are being warn before kick \n**False - inactive | True - active** : **<integer>** days to warn user
+ac_H_set_kick#<bool> <integer> : **<bool>** non verified users kick \n**False - inactive | True - active** : **<integer>** days to kick user
 .. bot text data
-bot_activity_prompt#extermination | {}help for commands
 under_construction#:construction: Under construction :construction: \nSoon available :construction_worker:
-c_math#Captcha math equation <cptmath>
-c_text#Captcha text <cpttext>
+unknown_command#:warning: Command **{}** is unknown! :warning:
+notprivileged_command#:x: @{} you are not priviliged to use **{}** command! :x:
+wrong_lang#:warning: **{}** is wrong! [mispelled/not availabe] :warning:
+c_math#Captcha math equation **<cptmath>**
+c_text#Captcha text **<cpttext>**
 ping_sfast#Super fast :rocket:
 ping_fast#Quite fast :rabbit:
 ping_slow#Sloow :turtle:
 ping_tslow#Terrible :sob:
 its_me#Yep that\'s me!
-whereme#You are on {} server!
-greet_admin#Hi Admin!
-greet_user#Hello {}!
+whereme#You are on **{}** server!
+greet_admin#Howdy Admin!
+greet_user#Hello **{}**!
