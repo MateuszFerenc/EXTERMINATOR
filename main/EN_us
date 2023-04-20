@@ -26,3 +26,14 @@ ac_H_set_warning# <bool> <integer> : <bool> False - non verified users being war
 ac_H_set_kick# <bool> <integer> : <bool> False - non verified users kick disabled | True - enabled  :  <integer> days to kick user
 .. bot text data
 bot_activity_prompt#extermination | {}help for commands
+under_construction#:construction: Under construction :construction: \nSoon available :construction_worker:
+c_math#Captcha math equation <cptmath>
+c_text#Captcha text <cpttext>
+ping_sfast#Super fast :rocket:
+ping_fast#Quite fast :rabbit:
+ping_slow#Sloow :turtle:
+ping_tslow#Terrible :sob:
+its_me#Yep that\'s me!
+whereme#You are on {} server!
+greet_admin#Hi Admin!
+greet_user#Hello {}!
