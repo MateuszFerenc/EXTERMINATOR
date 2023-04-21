@@ -2,7 +2,8 @@ import threading
 from datetime import datetime
 import discord
 from discord.ext import tasks
-from os import abort, path
+from os.path import basename as path_basename, join as path_join, dirname as path_dirname
+from os import remove
 import random
 from atexit import register as atexit_method
 import json
@@ -15,8 +16,11 @@ import io
 from lang_support import LangSupport
 from datalogger import DataLogger
 
-languages = LangSupport(path.basename(__file__).split(".")[0], ignore_file_error=True, ignore_key_error=True, ignore_dict_error=True)
-dl = DataLogger(path.basename(__file__).split(".")[0], 'logs')
+languages = LangSupport(path_basename(__file__).split(".")[0], ignore_file_error=True, ignore_key_error=True, ignore_dict_error=True)
+dl = DataLogger(path_basename(__file__).split(".")[0], 'logs')
+
+lang_log_file = path_join(path_dirname(__file__), languages.dl.directory, f"{languages.dl.log_name}.{languages.dl.logextension}")
+dl_log_file = path_join(path_dirname(__file__), dl.directory, f"{dl.log_name}.{dl.logextension}")
 
 langs_dict = {}
 exit_tasks = {}
@@ -31,6 +35,9 @@ def exit_handler():
     dl.log("Clean exit")
     for inst in DataLogger.instances:
         inst.end()
+    for file, task in exit_tasks.items():
+        if task == 'remove-file':
+            remove(file)
 
 
 atexit_method(exit_handler)
@@ -59,7 +66,7 @@ class MiniExterminator(threading.Thread):
         if command == 'exit':
             try:
                 asyncio.run_coroutine_threadsafe(asyncio.wait_for(self.ex.shutdown(), timeout=30), self.ex.loop)
-                while not self.closed:
+                while not self.ex.is_closed:
                     pass
                 dl.log("Bot inactive.")
             except TimeoutError:
@@ -126,9 +133,13 @@ class MiniExterminator(threading.Thread):
             if wrong:
                 print(f"Should be: dump_<data | config> [<server-name>] [<parameter>]")
                 dl.log(f"Should be: dump_<data | config> [<server-name>] [<parameter>]", log_type=2)
-        elif command.startswith("exec"):   # only for test purposes
-            comand = command.replace("exec ", "")
-            exec(str(comand))
+        elif command == "clear_logs":
+            if lang_log_file not in exit_tasks.keys():
+                exit_tasks[lang_log_file] = 'remove-file'
+            if dl_log_file not in exit_tasks.keys():
+                exit_tasks[dl_log_file] = 'remove-file'
+            print(f"Log files: {lang_log_file} {dl_log_file} will be deleted at exit")
+            dl.log(f"Log files: {lang_log_file} {dl_log_file} will be deleted at exit")
         else:
             print(f"Command: {command} is unknown")
             dl.log(f"Command: {command} is unknown", log_type=1)
@@ -146,6 +157,7 @@ class EXTERMINATOR(discord.Client):
         self.command_prefix = txt.cmd_prefix
         self.language = languages.language
         self.msg_edit_interval = 180 # seconds
+        self.running_since = None
         
     async def superuser_message_send(self, channel, message):
         #channel = discord.utils.get(self.client.get_all_channels(), id=channel)
@@ -155,8 +167,7 @@ class EXTERMINATOR(discord.Client):
     async def shutdown(self):
         dl.log(f"Shuttingdown {self.user}...")
         await self.loop.stop()
-        await self.loop.close()
-        dl.log(f"{self.user} offline")
+        await self.close()
 
     async def on_ready(self):
         dl.log(f"Logged in and ready as {self.user}")
@@ -164,6 +175,8 @@ class EXTERMINATOR(discord.Client):
         dl.log(f"Python version: {python_version()}")
         dl.log(f"Hosted on {system()} {release()} {architecture()[0]}")
         dl.log("Connected to:")
+        now_time = datetime.now()
+        join_time = now_time.strftime('%H%M_%d%m%y')
         for server in self.guilds:
             if server.name not in data_c:
                 data_c[server.name] = [txt.data_container_schema]
@@ -171,9 +184,12 @@ class EXTERMINATOR(discord.Client):
                 conf_c[server.name] = [txt.config_container_schema]
             lang = conf_c[server.name][0]['language']
             langs_dict[server.name] = txt.update_server_dict(languages, lang)
+            if conf_c[server.name][0]['member_since'] is None:
+                conf_c[server.name][0]['member_since'] = join_time
             dl.log(f"{server.id} - {server.name}")
         await self.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=f"extermination | {txt.cmd_prefix}help for commands"))
         self.periodic_task.start()
+        self.running_since = join_time
         self.ready = True
 
     @tasks.loop(seconds=task_loop_seconds)
@@ -325,7 +341,7 @@ if __name__ == "__main__":
                 data_c = json.load(data_container)
             except json.JSONDecodeError:
                 dl.log("data_container.json is corrupted", log_type=3)
-                abort()
+                exit(3)
             else:
                 dl.log("Data from data_container.json, successfully read")
     except FileNotFoundError:
@@ -337,7 +353,7 @@ if __name__ == "__main__":
                 conf_c = json.load(config_container)
             except json.JSONDecodeError:
                 dl.log("config_container.json is corrupted", log_type=3)
-                abort()
+                exit(3)
             else:
                 dl.log("Data from config_container.json, successfully read")
     except FileNotFoundError:
@@ -370,11 +386,18 @@ if __name__ == "__main__":
             c = input(">")
         except EOFError:
             c = "exit"
-        miniex.recieve(command = c)
-        if c == 'exit':
-            break
-        if c == 'h':
-            print("no help yet..")
+        if c.startswith("exec"):   # only for test purposes
+            command = c.replace("exec ", "")
+            try:
+                exec(str(command))
+            except Exception as e:
+                print(e)
+        else:
+            miniex.recieve(command = c)
+            if c == 'exit':
+                break
+            if c == 'h':
+                print("no help yet..")
 
     miniex.join()
     dl.log("MiniExterminator thread has been killed")

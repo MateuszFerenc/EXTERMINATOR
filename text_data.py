@@ -32,7 +32,7 @@ data_container_schema = {
 }
 
 config_container_schema = {
-    "member_since": "",
+    "member_since": None,
     "verify_method": "",
     "language": "EN_us",
     "verify_role": None,
