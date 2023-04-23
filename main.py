@@ -1,3 +1,5 @@
+#-*- coding: utf-8 -*-
+
 import threading
 from datetime import datetime
 import discord
@@ -28,8 +30,6 @@ exit_tasks = {}
 def exit_handler():
     with open("data_container.json", "w") as data_container_write:
         json.dump(data_c, data_container_write, indent=4)
-    with open("data_token.json", "w") as data_token_write:
-        json.dump(token_c, data_token_write, indent=4)
     with open("config_container.json", "w") as config_container_write:
         json.dump(conf_c, config_container_write, indent=4)
     dl.log("Clean exit")
@@ -57,6 +57,8 @@ class MiniExterminator(threading.Thread):
     def run(self):
         try:
             self.loop.run_until_complete(self.ex.start(token_c['bot-token']))
+        except RuntimeError:
+            pass
         except Exception as exception:
             dl.log(f"Program stopped due to {type(exception)} : {exception}", log_type=3)
         self.closed = True
@@ -64,16 +66,11 @@ class MiniExterminator(threading.Thread):
     def recieve(self, command):
         dl.log(f"SuperUser command: {command}")
         if command == 'exit':
-            try:
-                asyncio.run_coroutine_threadsafe(asyncio.wait_for(self.ex.shutdown(), timeout=30), self.ex.loop)
-                while not self.ex.is_closed:
-                    pass
-                dl.log("Bot inactive.")
-            except TimeoutError:
-                dl.log("Bot shutdown timeout! Force quitting.", log_type=2)
-            self.ex.loop.stop()
+            asyncio.run_coroutine_threadsafe(self.ex.shutdown(), self.ex.loop)
+            while not self.closed:
+                pass
             self.loop.stop()
-            self.join()
+            dl.log("Bot inactive.")
         elif command.startswith("su_send"):
             try:
                 channel = int(command.split()[1])
@@ -116,7 +113,7 @@ class MiniExterminator(threading.Thread):
                 print(str(data))
             elif len(command) == 1:
                 try:
-                    dump = str(data[command[0]])
+                    dump = str(data[command[0]][0])
                     dl.log(dump)
                     print(dump)
                 except IndexError:
@@ -146,7 +143,7 @@ class MiniExterminator(threading.Thread):
 
 
 class EXTERMINATOR(discord.Client):
-    task_loop_seconds = 60
+    task_loop_minutes = 5
 
     def __init__(self, *args, **kwargs):
 
@@ -192,7 +189,7 @@ class EXTERMINATOR(discord.Client):
         self.running_since = join_time
         self.ready = True
 
-    @tasks.loop(seconds=task_loop_seconds)
+    @tasks.loop(minutes=task_loop_minutes)
     async def periodic_task(self):
         pass
 
@@ -256,7 +253,7 @@ async def handle_message(self, message):
                 if message.content.startswith(txt.cmd_prefix):
                     msg = message.content.replace(f"{txt.cmd_prefix}", "")
                     cmd = msg.split()[0].strip()
-                    msg = msg.replace(f"{cmd}", "")
+                    msg = msg.replace(f"{cmd}", "").strip()
 
                     is_admin = message.author.guild_permissions.administrator
                     is_owner = message.author == message.guild.owner
@@ -313,9 +310,48 @@ async def handle_ac(command: str, msg: str, message):
         if msg not in languages.get_languages():
             await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'wrong_lang', msg))
         else:
-            dict_ = txt.update_server_dict(languages, msg)
-            langs_dict[message.guild.name] = dict_
-            conf_c[message.guild.name][0]['language'] = msg
+            week = int(txt.limited_commands[command].split(":")[0].replace("w", ""))
+            day = int(txt.limited_commands[command].split(":")[1].replace("d", ""))
+            week_inc = 1 if week > 0 else 0
+            day_inc = 1 if day > 0 else 0
+            block = False
+            if command in conf_c[message.guild.name][0]:
+                _week = int(conf_c[message.guild.name][0][command][0]['count'].split(":")[0].replace("w", ""))
+                _day = int(conf_c[message.guild.name][0][command][0]['count'].split(":")[1].replace("d", ""))
+                if _week < week or _day < day:
+                    conf_c[message.guild.name][0][command][0]['count'] = f"w{week_inc + _week}:d{day_inc + _day}"
+                else:
+                    block = True
+            else:
+                now_time = datetime.now().strftime('%H:%M:%d:%m:%y')
+                conf_c[message.guild.name][0][command] = []
+                data = {
+                    'count': f"w{week_inc}:d{day_inc}",
+                    'datetime': now_time
+                }
+                conf_c[message.guild.name][0][command].append(data)
+            if not block:
+                dict_ = txt.update_server_dict(languages, msg)
+                langs_dict[message.guild.name] = dict_
+                conf_c[message.guild.name][0]['language'] = msg
+                await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'changed_lang', msg))
+            else:
+                times = 0
+                kind = ""
+                if week:
+                    kind = languages.ext_text(langs_dict[message.guild.name], 'weekly')
+                    times = week
+                else:
+                    kind = languages.ext_text(langs_dict[message.guild.name], 'daily')
+                    times = day
+                await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'exceeded_command', command, times, kind))
+    elif command == 'get_languages':
+        text = ""
+        for i, lang in enumerate(languages.get_languages()):
+            text += f"{lang}"
+            if i != (len(languages.lang_list) - 1):
+                text += ", "
+        await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'get_langs', text))
     else:
         await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'under_construction'))
 
@@ -372,11 +408,13 @@ if __name__ == "__main__":
     except FileNotFoundError:
         dl.log("data_token.json, not found", log_type=1)
 
-    if no_token:
+    if no_token or 'bot-token' not in token_c:
+        no_token = True
         token_c['bot-token'] = input('No bot-token in data_token.json, enter it please\n>')
-
-    if 'bot-token' not in token_c:
-        token_c['bot-token'] = input('No bot-token in data_container.json, enter it please\n>')
+        
+    if no_token:
+        with open("data_token.json", "w") as data_token_write:
+            json.dump(token_c, data_token_write, indent=4)
 
     miniex = MiniExterminator()
     miniex.start()
@@ -389,7 +427,7 @@ if __name__ == "__main__":
         if c.startswith("exec"):   # only for test purposes
             command = c.replace("exec ", "")
             try:
-                exec(str(command))
+                exec(command.strip())
             except Exception as e:
                 print(e)
         else:

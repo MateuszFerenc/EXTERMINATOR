@@ -1,4 +1,4 @@
-.. EN_us language file
+.. English United States language file
 .. file format - parameter#text
 .. '#' ends parameter placeholder
 .. '..' starts single line comment, not interpreted
@@ -41,3 +41,8 @@ its_me#Yep that\'s me!
 whereme#You are on **{}** server!
 greet_admin#Howdy Admin!
 greet_user#Hello **{}**!
+get_langs#Available languages: {}
+exceeded_command#:warning: The number of available uses for {} command has been exceeded.\nThis command is available {} times per {}
+weekly#weekly
+daily#daily
+changed_lang#Language changed to {}

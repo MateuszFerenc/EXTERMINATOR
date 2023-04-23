@@ -1,4 +1,4 @@
-.. PL_pl plik językowy
+.. Polski Polska plik językowy
 .. format pliku - parametr#tekst
 .. '#' znak końca parametru
 .. '..' rozpoczyna jednoliniowy komentarz, nie interpretowany
@@ -41,3 +41,8 @@ its_me#Tak, to ja!
 whereme#Jesteś na serwerze **{}**!
 greet_admin#Czołem Adminie!
 greet_user#Cześć **{}**!
+get_langs#Dostępne języki: {}
+exceeded_command#:warning: Przekroczono liczbę dostępnych użyć dla polecenia {}.\nTo polecenie jest dostępne {} razy {}
+weekly#tygodniowo
+daily#dziennie
+changed_lang#Zmieniono język na {}

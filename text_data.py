@@ -5,11 +5,16 @@ app_name = "EXTERMINATOR"
 cmd_prefix = 'E>'
 
 nonadmin_cmd_list = ['help', 'hello', 'ping', 'whereami']
-admin_cmd_list = ['set_language', 'get_language', 'set_verify_method', 
+admin_cmd_list = ['set_language', 'get_languages', 'set_verify_method', 
                 'get_verify_methods', 'get_bot_stats', 'set_verified_role',
                 'set_verify_new', 'verify_user', 'verify_bulk', 
                 'reverify', 'set_ghosting', 'set_warning', 
                 'set_kick', 'hello']
+
+limited_commands = {
+    'set_language': "w0:d4",
+    'reverify': "w1:d0"
+}
 
 # < JSON data schemas section START
 data_container_schema = {
