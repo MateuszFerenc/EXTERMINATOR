@@ -8,7 +8,7 @@ header_help#**{}** commands help (Command prefix **{}**):
 .. non admin commands descriptions [nac_H]
 header_nac_H#• Non Admin commands •
 nac_H_help#Prints bot commands and its descriptions
-nac_H_hello#Greets user with \"Hello!\"
+nac_H_hello#Greets user with \"Hello\"
 nac_H_ping#Did I hear Ping-Pong? Lets check the connection latency
 nac_H_whereami#Prints server name
 .. admin only commands descriptions [ac_H]
@@ -19,18 +19,22 @@ ac_H_set_verify_method#<text> : Set user verification method to **<text>**
 ac_H_get_verify_methods#: Get available user verification methods
 ac_H_get_bot_stats#: Print the bot's statistics and details
 ac_H_set_verified_role#<text> : Set **<text>** to role of verified user
-ac_H_set_verify_new#<bool> : **<bool>** verification of new users \n**False - disabled | True - enabled**
+ac_H_set_verify_new#<bool> : **<bool>** verification of new users \n**False - disabled | True - enabled** - **Command available 2 times a day**
 ac_H_verify_user#<text> : Verifies user **<text>**
 ac_H_verify_bulk#<text_multi> : Verifies yet unverified users
 ac_H_reverify#Re-verify all server members - **Command available one time per week**
 ac_H_set_ghosting#<bool> <integer> : **<bool>** non verified users are being ghosted \n**False - inactive | True - active** : **<integer>** days to ghost user
 ac_H_set_warning#<bool> <integer> : **<bool>** non verified users are being warn before kick \n**False - inactive | True - active** : **<integer>** days to warn user
 ac_H_set_kick#<bool> <integer> : **<bool>** non verified users kick \n**False - inactive | True - active** : **<integer>** days to kick user
+ac_H_hello#Greets admin with \"Howdy\"
 .. bot text data
 under_construction#:construction: Under construction :construction: \nSoon available :construction_worker:
+verif_unavil#User verification is temporarily unavailable, for further information please contact the Server Administration.
 unknown_command#:warning: Command **{}** is unknown! :warning:
 notprivileged_command#:x: @{} you are not priviliged to use **{}** command! :x:
-wrong_lang#:warning: **{}** is wrong! [mispelled/not availabe] :warning:
+wrong_choice#:warning: **{}** is wrong! [mispelled/not availabe] Available options: {} :warning:
+yes#yes
+no#no
 c_math#Captcha math equation **<cptmath>**
 c_text#Captcha text **<cpttext>**
 ping_sfast#Super fast :rocket:
@@ -46,3 +50,4 @@ exceeded_command#:warning: The number of available uses for {} command has been 
 weekly#weekly
 daily#daily
 changed_lang#Language changed to {}
+verify_new_set#Verification of new users set to {}

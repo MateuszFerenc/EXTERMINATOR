@@ -8,7 +8,7 @@ header_help#**{}** strona pomocy (prefiks komend **{}**):
 .. Komendy niezależne od uprawnień [nac_H]
 header_nac_H#• Komendy niezależne od uprawnień •
 nac_H_help#Wyświetla komendy bota i ich opisy
-nac_H_hello#Wita użytkownika za pomocą \"Cześć!\"
+nac_H_hello#Wita użytkownika za pomocą \"Cześć\"
 nac_H_ping#Czy ja słyszałem Ping-Pong? Sprawdźmy opóźnienie połączenia.
 nac_H_whereami#Wyświetla nazwę serwera
 .. Komendy administratorskie [ac_H]
@@ -19,18 +19,22 @@ ac_H_set_verify_method#<text> : Ustaw metodę weryfikacji użytkownika na **<tex
 ac_H_get_verify_methods#: Uzyskaj dostępne metody weryfikacji użytkownika
 ac_H_get_bot_stats#: Wypisz statystyki i szczegóły dotyczące bota
 ac_H_set_verified_role#<text> : Ustaw **<text>** jako rolę zweryfikowanego użytkownika
-ac_H_set_verify_new#<bool> : **<bool>** weryfikacja nowych użytkowników \n**False - wyłączona | True - włączona**
+ac_H_set_verify_new#<bool> : **<bool>** weryfikacja nowych użytkowników \n**False - wyłączona | True - włączona** - **Polecenie dostępne 2 razy dziennie**
 ac_H_verify_user#<text> : Weryfikuje użytkownika **<text>**
 ac_H_verify_bulk#<text_multi> : Weryfikuje dotychczas niezweryfikowanych użytkowników
 ac_H_reverify#Ponowne weryfikowanie wszystkich członków serwera - **Polecenie dostępne jeden raz w tygodniu**
 ac_H_set_ghosting#<bool> <integer> : **<bool>** niezweryfikowani użytkownicy zostają wykluczeni \n**False - nie aktywne | True - aktywne** : **<integer>** dni do wykluczenia użytkownika
 ac_H_set_warning#<bool> <integer> : **<bool>** niezweryfikowani użytkownicy zostają ostrzegani przed wyrzuceniem \n**False - nie aktywne | True - aktywne** : **<integer>** dni do ostrzeżenia użytkownika
 ac_H_set_kick#<bool> <integer> : **<bool>** niezweryfikowani użytkownicy zostają usunięci \n**False - nie aktywne | True - aktywne** : **<integer**> dni do usunięcia użytkownika
+ac_H_hello#Wita admina za pomocą \"Czołem\"
 .. bot text data
 under_construction#:construction: W przygotowaniu :construction: \nWkrótce dostępne :construction_worker:
+verif_unavil#Weryfikacja użytkownika jest tymczasowo niedostępna, w celu uzyskania dalszych informacji prosimy o kontakt z Administracją serwera.
 unknown_command#:warning: Komenda **{}** jest nieznana! :warning:
 notprivileged_command#:x: @{} nie jesteś uprzywilejowany aby uzyć komendy {}! :x:
-wrong_lang#:warning: **{}** jest nieprawidłowy! [błędny/nie dostępny] :warning:
+wrong_choice#:warning: **{}** jest lipny! [błędny/nie dostępny] Dostępne opcje: {} :warning:
+yes#tak
+no#nie
 c_math#Równanie matematyczne Captcha **<cptmath>**
 c_text#Tekst Captcha **<cpttext>**
 ping_sfast#Super prędko :rocket:
@@ -46,3 +50,4 @@ exceeded_command#:warning: Przekroczono liczbę dostępnych użyć dla polecenia
 weekly#tygodniowo
 daily#dziennie
 changed_lang#Zmieniono język na {}
+verify_new_set#Weryfikacja nowych użytkowników ustawiona na {}

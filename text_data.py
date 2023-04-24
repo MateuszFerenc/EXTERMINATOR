@@ -1,5 +1,5 @@
 from lang_support import LangSupport
-
+from datetime import datetime
 
 app_name = "EXTERMINATOR"
 cmd_prefix = 'E>'
@@ -13,6 +13,7 @@ admin_cmd_list = ['set_language', 'get_languages', 'set_verify_method',
 
 limited_commands = {
     'set_language': "w0:d4",
+    'set_verify_new': "w0:d2",
     'reverify': "w1:d0"
 }
 
@@ -49,23 +50,21 @@ config_container_schema = {
 }
 # < JSON data schemas section END
 
-def prepare_help_page(langsupport_inst: LangSupport, lang_dict: dict) -> str:
-    assert isinstance(langsupport_inst, LangSupport)
-    page = "{}\n".format(langsupport_inst.ext_text(lang_dict, 'header_help', app_name, cmd_prefix))
-    page += "\n{}\n".format(langsupport_inst.ext_text(lang_dict, 'header_nac_H'))
+def prepare_help_page(lang_dict: dict) -> str:
+    page = "{}\n".format(LangSupport.ext_text(None, lang_dict, 'header_help', app_name, cmd_prefix))
+    page += "\n{}\n".format(LangSupport.ext_text(None, lang_dict, 'header_nac_H'))
     for c in nonadmin_cmd_list:
-        page += "***{}*** : {}\n".format(c, langsupport_inst.ext_text(lang_dict, f"nac_H_{c}"))
-    page += "\n{}\n".format(langsupport_inst.ext_text(lang_dict, 'header_ac_H'))
+        page += "►  ***{}*** : {}\n".format(c, LangSupport.ext_text(None, lang_dict, f"nac_H_{c}"))
+    page += "\n{}\n".format(LangSupport.ext_text(None, lang_dict, 'header_ac_H'))
     for c in admin_cmd_list:
-        page += "***{}*** : {}\n".format(c, langsupport_inst.ext_text(lang_dict, f"ac_H_{c}"))
+        page += "►  ***{}*** : {}\n".format(c, LangSupport.ext_text(None, lang_dict, f"ac_H_{c}"))
     return page.replace(r'\n', '\n')
 
-def return_verification_list(langsupport_inst: LangSupport, lang_dict: dict) -> list:
-    assert isinstance(langsupport_inst, LangSupport)
+def return_verification_list(lang_dict: dict) -> list:
     keys_list = ['c_math', 'c_text']
     temp_list = []
     for k in keys_list:
-        temp_list.append(langsupport_inst.ext_text(lang_dict, k))
+        temp_list.append(LangSupport.ext_text(None, lang_dict, k))
     return temp_list
 
 def update_server_dict(langsupport_inst: LangSupport, lang: str) -> dict:
@@ -73,3 +72,50 @@ def update_server_dict(langsupport_inst: LangSupport, lang: str) -> dict:
     assert type(lang) is str
     assert lang in langsupport_inst.get_languages()
     return langsupport_inst.set_language(lang=lang, dump=True)
+
+def get_time_limit(command: str):
+    week = int(limited_commands[command].split(":")[0].replace("w", ""))
+    day = int(limited_commands[command].split(":")[1].replace("d", ""))
+    week_inc = 1 if week > 0 else 0
+    day_inc = 1 if day > 0 else 0
+    return week, day, week_inc, day_inc
+
+def get_limit_name(langs_dict: dict, command: str):
+    dat = list(get_time_limit(command))
+    times = 0
+    kind = ""
+    if dat[0]:
+        kind = LangSupport.ext_text(None, langs_dict, 'weekly')
+        times = dat[0]
+    else:
+        kind = LangSupport.ext_text(None, langs_dict, 'daily')
+        times = dat[1]
+    return kind, times
+    
+def is_command_limited(config_cointainer: dict, server_name: str, command: str):
+    week, day, week_inc, day_inc = get_time_limit(command)
+    if command in config_cointainer[server_name][0]:
+        _week = int(config_cointainer[server_name][0][command][0]['count'].split(":")[0].replace("w", ""))
+        _day = int(config_cointainer[server_name][0][command][0]['count'].split(":")[1].replace("d", ""))
+        if _week < week or _day < day:
+            config_cointainer[server_name][0][command][0]['count'] = f"w{week_inc + _week}:d{day_inc + _day}"
+        else:
+            return True
+    else:
+        now_time = datetime.now().strftime('%H:%M:%d:%m:%y')
+        config_cointainer[server_name][0][command] = []
+        data = {
+            'count': f"w{week_inc}:d{day_inc}",
+            'datetime': now_time
+        }
+        config_cointainer[server_name][0][command].append(data)
+    return False
+
+def decision_bool(yes: list, no: list, s: str) -> bool:
+    s = s.lower()
+    if s == yes or s == 1:
+        return True
+    elif s == no or s == 0:
+        return False
+    else:
+        raise TypeError()

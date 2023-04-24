@@ -155,16 +155,6 @@ class EXTERMINATOR(discord.Client):
         self.language = languages.language
         self.msg_edit_interval = 180 # seconds
         self.running_since = None
-        
-    async def superuser_message_send(self, channel, message):
-        #channel = discord.utils.get(self.client.get_all_channels(), id=channel)
-        channel = self.get_channel(channel)
-        await channel.send(message)
-        
-    async def shutdown(self):
-        dl.log(f"Shuttingdown {self.user}...")
-        await self.loop.stop()
-        await self.close()
 
     async def on_ready(self):
         dl.log(f"Logged in and ready as {self.user}")
@@ -221,14 +211,14 @@ class EXTERMINATOR(discord.Client):
         if self.ready:
             if member.name != self.user and not member.bot:
                 dl.log(f"{member.name} has joined {member.guild.name}")
-                channel = await member.create_dm()
-                embed = discord.Embed(
-                    title=f":smiley: Hello! {member.name} :wave:",
-                    description="User verification is temporarily unavailable, for further"
-                                "information please contact the Server Administration.",
-                    color=0xC00000
-                )
-                await channel.send(embed=embed)
+                if conf_c[member.guild.name][0]['verify_new']:
+                    channel = await member.create_dm()
+                    embed = discord.Embed(
+                        title=f":smiley: Hello! {member.name} :wave:",
+                        description=languages.ext_text(langs_dict[member.guild.name], 'verif_unavil'),
+                        color=0xC00000
+                    )
+                    await channel.send(embed=embed)
             else:
                 dl.log(f"{member.name} was added to {member.guild.name}")
 
@@ -244,11 +234,20 @@ class EXTERMINATOR(discord.Client):
         # before.role != after.role
         if not self.ready:
             return
+        
+    async def superuser_message_send(self, channel, message):
+        channel = self.get_channel(channel)
+        await channel.send(message)
+        
+    async def shutdown(self):
+        dl.log(f"Shuttingdown {self.user}...")
+        await self.loop.stop()
+        await self.close()
 
 
-async def handle_message(self, message):
-    if self.ready:
-        if message.author != self.user:
+async def handle_message(server, message):
+    if server.ready:
+        if message.author != server.user:
             if message.guild is not None:
                 if message.content.startswith(txt.cmd_prefix):
                     msg = message.content.replace(f"{txt.cmd_prefix}", "")
@@ -281,7 +280,7 @@ async def handle_message(self, message):
                     await channel.send(languages.ext_text(langs_dict[message.guild.name], 'under_construction'))
 
 
-async def handle_nac(command: str, msg: str, message):
+async def handle_nac(command: str, data: str, message):
     if command == 'ping':
         ping = round(miniex.ex.latency, 1)
         speed = ''
@@ -297,53 +296,27 @@ async def handle_nac(command: str, msg: str, message):
     elif command == 'whereami':
         await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'whereme', message.guild.name))
     elif command == 'help':
-        await send_embed_help(message, txt.prepare_help_page(languages, langs_dict[message.guild.name]))
+        await send_embed_help(message, txt.prepare_help_page(langs_dict[message.guild.name]))
     elif command == 'hello':
         await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'greet_user', message.author.split('#')[0]))
     else:
         await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'under_construction'))
 
-async def handle_ac(command: str, msg: str, message):
+async def handle_ac(command: str, data: str, message):
     if command == 'hello':
         await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'greet_admin'))
     elif command == 'set_language':
-        if msg not in languages.get_languages():
-            await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'wrong_lang', msg))
+        langs = languages.get_languages()
+        if data not in langs:
+            await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'wrong_choice', data, langs))
         else:
-            week = int(txt.limited_commands[command].split(":")[0].replace("w", ""))
-            day = int(txt.limited_commands[command].split(":")[1].replace("d", ""))
-            week_inc = 1 if week > 0 else 0
-            day_inc = 1 if day > 0 else 0
-            block = False
-            if command in conf_c[message.guild.name][0]:
-                _week = int(conf_c[message.guild.name][0][command][0]['count'].split(":")[0].replace("w", ""))
-                _day = int(conf_c[message.guild.name][0][command][0]['count'].split(":")[1].replace("d", ""))
-                if _week < week or _day < day:
-                    conf_c[message.guild.name][0][command][0]['count'] = f"w{week_inc + _week}:d{day_inc + _day}"
-                else:
-                    block = True
-            else:
-                now_time = datetime.now().strftime('%H:%M:%d:%m:%y')
-                conf_c[message.guild.name][0][command] = []
-                data = {
-                    'count': f"w{week_inc}:d{day_inc}",
-                    'datetime': now_time
-                }
-                conf_c[message.guild.name][0][command].append(data)
-            if not block:
-                dict_ = txt.update_server_dict(languages, msg)
+            if not txt.is_command_limited(conf_c, message.guild.name, command):
+                dict_ = txt.update_server_dict(languages, data)
                 langs_dict[message.guild.name] = dict_
-                conf_c[message.guild.name][0]['language'] = msg
-                await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'changed_lang', msg))
+                conf_c[message.guild.name][0]['language'] = data
+                await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'changed_lang', data))
             else:
-                times = 0
-                kind = ""
-                if week:
-                    kind = languages.ext_text(langs_dict[message.guild.name], 'weekly')
-                    times = week
-                else:
-                    kind = languages.ext_text(langs_dict[message.guild.name], 'daily')
-                    times = day
+                kind, times = txt.get_limit_name(langs_dict[message.guild.name], command)
                 await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'exceeded_command', command, times, kind))
     elif command == 'get_languages':
         text = ""
@@ -352,19 +325,30 @@ async def handle_ac(command: str, msg: str, message):
             if i != (len(languages.lang_list) - 1):
                 text += ", "
         await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'get_langs', text))
+    elif command == 'set_verify_new':
+        lang_yes = langs_dict[message.guild.name]['yes']
+        lang_no = langs_dict[message.guild.name]['no']
+        try:
+            decision = txt.decision_bool(lang_yes, lang_no, data)
+        except TypeError:
+            d = f"{lang_yes}, {lang_no}"
+            await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'wrong_choice', data, d))
+        finally:
+            if not txt.is_command_limited(conf_c, message.guild.name, command):
+                conf_c[message.guild.name][0]['verify_new'] = decision
+                await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'verify_new_set', data))
+            else:
+                kind, times = txt.get_limit_name(langs_dict[message.guild.name], command)
+                await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'exceeded_command', command, times, kind))
     else:
         await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'under_construction'))
 
-async def send_embed_help(message, data):
-    if data is None:
-        return 3
+async def send_embed_help(message, data: str):
     embed = discord.Embed(
-        title="Help",
         description=data,
         color=0xC00000
     )
     await message.channel.send(embed=embed)
-
 
 if __name__ == "__main__":
     data_c = {}
