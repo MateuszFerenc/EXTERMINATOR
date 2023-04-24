@@ -35,8 +35,8 @@ notprivileged_command#:x: @{} nie jesteś uprzywilejowany aby uzyć komendy {}! 
 wrong_choice#:warning: **{}** jest lipny! [błędny/nie dostępny] Dostępne opcje: {} :warning:
 yes#tak
 no#nie
-c_math#Równanie matematyczne Captcha **<cptmath>**
-c_text#Tekst Captcha **<cpttext>**
+cptmath#Równanie matematyczne Captcha
+cpttext#Tekst Captcha
 ping_sfast#Super prędko :rocket:
 ping_fast#Dość prędko :rabbit:
 ping_slow#Wolnooo :turtle:
@@ -46,8 +46,15 @@ whereme#Jesteś na serwerze **{}**!
 greet_admin#Czołem Adminie!
 greet_user#Cześć **{}**!
 get_langs#Dostępne języki: {}
+get_verif#Dostepne metody weryfikacji: {}
 exceeded_command#:warning: Przekroczono liczbę dostępnych użyć dla polecenia {}.\nTo polecenie jest dostępne {} razy {}
 weekly#tygodniowo
 daily#dziennie
 changed_lang#Zmieniono język na {}
 verify_new_set#Weryfikacja nowych użytkowników ustawiona na {}
+creator#Twórca bota:
+version#Wersja bota:
+running_since#Działający od:
+member_since#Członek {} od:
+bot_parameters#Parametry bota:
+requested_by#Na prośbę {}

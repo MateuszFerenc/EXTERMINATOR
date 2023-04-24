@@ -87,27 +87,17 @@ class LangSupport:
                 self.dl.log(f"Key: {dict_key} can be formatted, but no args were given.", log_type=1)
         return text.replace(r'\n', '\n').replace(r'\t', '\t')
     
-    def ext_text(self, dict: dict, dict_key: str, *args) -> ( None | str ):
+    @staticmethod
+    def ext_text(dict: dict, dict_key: str, *args) -> ( None | str ):
         text = None
         try:
             text = str(dict[dict_key])  # get text value based on key
         except KeyError:
-            if len(dict):
-                self.dl.log(f"{dict_key} key not found in {self.language} language file.", log_type=2)
-                if self.ignore_key_error:
-                    self.dl.log(f"Error disabled by ignore_key_error flag.")
-                    return dict_key
-            else:
-                self.dl.log(f"Language: {self.language} not loaded!", log_type=2)
-                if self.ignore_dict_error:
-                    self.dl.log(f"Exit disabled by ignore_dict_error flag.")
-                    return dict_key
-            exit(3)
+            return dict_key
         try:
             text = text.format(*args)   # try to format text with arguments, if any specified
         except IndexError:
-            if text.find("{}"):
-                self.dl.log(f"Key: {dict_key} can be formatted, but no args were given.", log_type=1)
+            pass
         return text.replace(r'\n', '\n').replace(r'\t', '\t')
 
 

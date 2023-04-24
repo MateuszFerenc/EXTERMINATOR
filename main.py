@@ -76,7 +76,8 @@ class MiniExterminator(threading.Thread):
                 channel = int(command.split()[1])
                 message = command.replace(f"su_send {str(channel)} ", "").replace(r'\n', '\n').replace(r'\t', '\t')
                 if len(message):
-                    asyncio.run_coroutine_threadsafe(self.ex.superuser_message_send(channel=channel, message=message), self.loop)
+                    channel = self.get_channel(channel)
+                    asyncio.run_coroutine_threadsafe(channel.send(message), self.loop)
                 else:
                     raise IndexError
             except IndexError:
@@ -152,18 +153,17 @@ class EXTERMINATOR(discord.Client):
         self.ready = False
         self.name = txt.app_name
         self.command_prefix = txt.cmd_prefix
-        self.language = languages.language
         self.msg_edit_interval = 180 # seconds
         self.running_since = None
 
     async def on_ready(self):
-        dl.log(f"Logged in and ready as {self.user}")
+        dl.log(f"Logged in and ready as {self.user.name}")
         dl.log(f"discord.py API version: {discord.__version__}")
         dl.log(f"Python version: {python_version()}")
         dl.log(f"Hosted on {system()} {release()} {architecture()[0]}")
         dl.log("Connected to:")
         now_time = datetime.now()
-        join_time = now_time.strftime('%H%M_%d%m%y')
+        join_time = now_time.strftime('%H:%M_%d/%m/%y')
         for server in self.guilds:
             if server.name not in data_c:
                 data_c[server.name] = [txt.data_container_schema]
@@ -235,19 +235,15 @@ class EXTERMINATOR(discord.Client):
         if not self.ready:
             return
         
-    async def superuser_message_send(self, channel, message):
-        channel = self.get_channel(channel)
-        await channel.send(message)
-        
     async def shutdown(self):
         dl.log(f"Shuttingdown {self.user}...")
         await self.loop.stop()
         await self.close()
 
 
-async def handle_message(server, message):
-    if server.ready:
-        if message.author != server.user:
+async def handle_message(bot, message):
+    if bot.ready:
+        if message.author != bot.user:
             if message.guild is not None:
                 if message.content.startswith(txt.cmd_prefix):
                     msg = message.content.replace(f"{txt.cmd_prefix}", "")
@@ -296,7 +292,11 @@ async def handle_nac(command: str, data: str, message):
     elif command == 'whereami':
         await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'whereme', message.guild.name))
     elif command == 'help':
-        await send_embed_help(message, txt.prepare_help_page(langs_dict[message.guild.name]))
+        embed = discord.Embed(
+            description=txt.prepare_help_page(langs_dict[message.guild.name]),
+            color=0xC00000
+        )
+        await message.channel.send(embed=embed)
     elif command == 'hello':
         await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'greet_user', message.author.split('#')[0]))
     else:
@@ -318,13 +318,6 @@ async def handle_ac(command: str, data: str, message):
             else:
                 kind, times = txt.get_limit_name(langs_dict[message.guild.name], command)
                 await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'exceeded_command', command, times, kind))
-    elif command == 'get_languages':
-        text = ""
-        for i, lang in enumerate(languages.get_languages()):
-            text += f"{lang}"
-            if i != (len(languages.lang_list) - 1):
-                text += ", "
-        await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'get_langs', text))
     elif command == 'set_verify_new':
         lang_yes = langs_dict[message.guild.name]['yes']
         lang_no = langs_dict[message.guild.name]['no']
@@ -340,15 +333,53 @@ async def handle_ac(command: str, data: str, message):
             else:
                 kind, times = txt.get_limit_name(langs_dict[message.guild.name], command)
                 await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'exceeded_command', command, times, kind))
+    elif command == 'get_languages':
+        text = ""
+        for i, lang in enumerate(languages.get_languages()):
+            text += f"{lang}"
+            if i != (len(languages.lang_list) - 1):
+                text += ", "
+        await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'get_langs', text))
+    elif command == 'get_verify_methods':
+        text = ""
+        for i, key in enumerate(txt.verification_list):
+            text += f"{key} - {languages.ext_text(langs_dict[message.guild.name], key)}"
+            if i != (len(txt.verification_list) - 1):
+                text += ", "
+        await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'get_verif', text))
+    elif command == 'get_bot_stats':
+        embed = discord.Embed(
+            title=miniex.ex.user.name,
+            url="https://github.com/MateuszFerenc/EXTERMINATOR",
+            color=0xC00000
+        )
+        embed.add_field(
+            name=languages.ext_text(langs_dict[message.guild.name], 'creator'),
+            value="Mateusz Ferenc"
+        )
+        embed.add_field(
+            name=languages.ext_text(langs_dict[message.guild.name], 'version'),
+            value=txt.version
+        )
+        embed.add_field(name=" ", value=" ", inline=False)
+        embed.add_field(
+            name=languages.ext_text(langs_dict[message.guild.name], 'running_since'),
+            value=miniex.ex.running_since.replace("_", " ")
+        )
+        embed.add_field(
+            name=languages.ext_text(langs_dict[message.guild.name], 'member_since', message.guild.name),
+            value=conf_c[message.guild.name][0]['member_since'].replace("_", " ")
+        )
+        embed.add_field(
+            name=languages.ext_text(langs_dict[message.guild.name], 'bot_parameters'),
+            value="EMPTY",
+            inline=False
+        )
+        embed.set_footer(text=languages.ext_text(langs_dict[message.guild.name], 'requested_by', message.author.name), icon_url=message.author.avatar)
+        await message.channel.send(embed=embed)
     else:
         await message.channel.send(languages.ext_text(langs_dict[message.guild.name], 'under_construction'))
 
-async def send_embed_help(message, data: str):
-    embed = discord.Embed(
-        description=data,
-        color=0xC00000
-    )
-    await message.channel.send(embed=embed)
 
 if __name__ == "__main__":
     data_c = {}

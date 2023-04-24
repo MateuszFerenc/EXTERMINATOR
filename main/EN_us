@@ -35,8 +35,8 @@ notprivileged_command#:x: @{} you are not priviliged to use **{}** command! :x:
 wrong_choice#:warning: **{}** is wrong! [mispelled/not availabe] Available options: {} :warning:
 yes#yes
 no#no
-c_math#Captcha math equation **<cptmath>**
-c_text#Captcha text **<cpttext>**
+cptmath#Captcha math equation
+cpttext#Captcha text
 ping_sfast#Super fast :rocket:
 ping_fast#Quite fast :rabbit:
 ping_slow#Sloow :turtle:
@@ -46,8 +46,15 @@ whereme#You are on **{}** server!
 greet_admin#Howdy Admin!
 greet_user#Hello **{}**!
 get_langs#Available languages: {}
+get_verif#Available verification methods: {}
 exceeded_command#:warning: The number of available uses for {} command has been exceeded.\nThis command is available {} times per {}
 weekly#weekly
 daily#daily
 changed_lang#Language changed to {}
 verify_new_set#Verification of new users set to {}
+creator#Bot creator:
+version#Bot version:
+running_since#Running since:
+member_since#{} member since:
+bot_parameters#Bot parameters:
+requested_by#Requested by {}

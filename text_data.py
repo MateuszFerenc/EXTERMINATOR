@@ -17,6 +17,9 @@ limited_commands = {
     'reverify': "w1:d0"
 }
 
+verification_list = ['cptmath', 'cpttext']
+version = "0.00.21 (Alfa)"
+
 # < JSON data schemas section START
 data_container_schema = {
     "Users2Verify": 0,
@@ -51,21 +54,14 @@ config_container_schema = {
 # < JSON data schemas section END
 
 def prepare_help_page(lang_dict: dict) -> str:
-    page = "{}\n".format(LangSupport.ext_text(None, lang_dict, 'header_help', app_name, cmd_prefix))
-    page += "\n{}\n".format(LangSupport.ext_text(None, lang_dict, 'header_nac_H'))
+    page = "{}\n".format(LangSupport.ext_text(lang_dict, 'header_help', app_name, cmd_prefix))
+    page += "\n{}\n".format(LangSupport.ext_text(lang_dict, 'header_nac_H'))
     for c in nonadmin_cmd_list:
-        page += "►  ***{}*** : {}\n".format(c, LangSupport.ext_text(None, lang_dict, f"nac_H_{c}"))
-    page += "\n{}\n".format(LangSupport.ext_text(None, lang_dict, 'header_ac_H'))
+        page += "➤  ***{}*** : {}\n".format(c, LangSupport.ext_text(lang_dict, f"nac_H_{c}"))
+    page += "\n{}\n".format(LangSupport.ext_text(lang_dict, 'header_ac_H'))
     for c in admin_cmd_list:
-        page += "►  ***{}*** : {}\n".format(c, LangSupport.ext_text(None, lang_dict, f"ac_H_{c}"))
+        page += "➤  ***{}*** : {}\n".format(c, LangSupport.ext_text(lang_dict, f"ac_H_{c}"))
     return page.replace(r'\n', '\n')
-
-def return_verification_list(lang_dict: dict) -> list:
-    keys_list = ['c_math', 'c_text']
-    temp_list = []
-    for k in keys_list:
-        temp_list.append(LangSupport.ext_text(None, lang_dict, k))
-    return temp_list
 
 def update_server_dict(langsupport_inst: LangSupport, lang: str) -> dict:
     assert isinstance(langsupport_inst, LangSupport)
@@ -85,10 +81,10 @@ def get_limit_name(langs_dict: dict, command: str):
     times = 0
     kind = ""
     if dat[0]:
-        kind = LangSupport.ext_text(None, langs_dict, 'weekly')
+        kind = LangSupport.ext_text(langs_dict, 'weekly')
         times = dat[0]
     else:
-        kind = LangSupport.ext_text(None, langs_dict, 'daily')
+        kind = LangSupport.ext_text(langs_dict, 'daily')
         times = dat[1]
     return kind, times
     
